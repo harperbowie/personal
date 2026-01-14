@@ -3,7 +3,7 @@ var rotation = 0;
 var isRotating = false;
 var isHovering = false;
 var tilt = { x: 0, y: 0 };
-var mousePos = { x: 0, y: 0 };
+var mousePos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 var deviceTilt = { x: 0, y: 0 };
 var animationFrameId = null;
 var fireworksTimer = null;
@@ -68,16 +68,23 @@ if (window.DeviceOrientationEvent) {
     });
 }
 
-// Ambient animation
+// Ambient animation - 更灵动的鼠标跟随
 function animate() {
-    if (!isHovering && !isRotating && rotation % 360 === 0) {
+    if (!isRotating) {
         var centerX = window.innerWidth / 2;
         var centerY = window.innerHeight / 2;
         var deltaX = (mousePos.x - centerX) / centerX;
         var deltaY = (mousePos.y - centerY) / centerY;
         
-        tilt.x += (deltaY * -3 - tilt.x) * 0.05;
-        tilt.y += (deltaX * 3 - tilt.y) * 0.05;
+        // 增强跟随效果
+        var targetX = deltaY * -8;
+        var targetY = deltaX * 8;
+        
+        if (!isHovering) {
+            // 鼠标不在卡片上时，更明显的跟随
+            tilt.x += (targetX - tilt.x) * 0.15;
+            tilt.y += (targetY - tilt.y) * 0.15;
+        }
 
         var finalTilt = isMobile ? deviceTilt : tilt;
         cardInner.style.transform = 'rotateX(' + finalTilt.x + 'deg) rotateY(' + (finalTilt.y + rotation) + 'deg)';
@@ -92,23 +99,28 @@ cardContainer.addEventListener('mouseenter', function() {
 });
 
 cardContainer.addEventListener('mousemove', function(e) {
-    if (isRotating || rotation % 360 !== 0) return;
+    if (isRotating) return;
     
     var rect = cardContainer.getBoundingClientRect();
     var x = e.clientX - rect.left;
     var y = e.clientY - rect.top;
     var centerX = rect.width / 2;
     var centerY = rect.height / 2;
-    var tiltX = ((y - centerY) / centerY) * -12;
-    var tiltY = ((x - centerX) / centerX) * 12;
+    
+    // 悬停时更强的倾斜效果
+    var tiltX = ((y - centerY) / centerY) * -20;
+    var tiltY = ((x - centerX) / centerX) * 20;
+    
+    tilt.x = tiltX;
+    tilt.y = tiltY;
     
     cardInner.style.transform = 'rotateX(' + tiltX + 'deg) rotateY(' + (tiltY + rotation) + 'deg)';
 });
 
 cardContainer.addEventListener('mouseleave', function() {
     isHovering = false;
-    if (!isRotating && rotation % 360 === 0) {
-        tilt = { x: 0, y: 0 };
+    if (!isRotating) {
+        // 离开时不重置，继续全局跟随
     }
 });
 
@@ -116,14 +128,13 @@ cardContainer.addEventListener('mouseleave', function() {
 cardContainer.addEventListener('click', function() {
     isRotating = true;
     rotation += 180;
-    tilt = { x: 0, y: 0 };
     
     var finalTilt = isMobile ? deviceTilt : tilt;
     cardInner.style.transform = 'rotateX(' + finalTilt.x + 'deg) rotateY(' + (finalTilt.y + rotation) + 'deg)';
     
     setTimeout(function() {
         isRotating = false;
-    }, 800);
+    }, 600);
 });
 
 // Fireworks
