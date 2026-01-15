@@ -32,8 +32,9 @@ window.addEventListener('mousemove', e => {
 function handleOrientation(event) {
     if (event.beta !== null && event.gamma !== null) {
         inputMode = 'gyro';
-        gyroTargetX = Math.max(-12, Math.min(12, event.beta / 3));
-        gyroTargetY = Math.max(-12, Math.min(12, event.gamma / 3));
+        // 增加幅度，让旋转更明显
+        gyroTargetX = Math.max(-24, Math.min(24, event.beta / 2)); // 增加幅度
+        gyroTargetY = Math.max(-24, Math.min(24, event.gamma / 2)); // 增加幅度
     }
 }
 
