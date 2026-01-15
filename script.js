@@ -77,6 +77,9 @@ if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigat
 // =================
 // renderLoop
 // =================
+// =================
+// renderLoop
+// =================
 function renderLoop() {
     let targetX = 0, targetY = 0;
 
@@ -100,10 +103,13 @@ function renderLoop() {
 
         const maxAngle = 10; // 最大倾斜角
         
-        // ✅ 关键修改：鼠标在哪个角，就抬起哪个角
-        // 鼠标在右上角(px=+, py=-)时：X轴向上(-)，Y轴向右(+)
-        targetX = -py * maxAngle;   // 上负下正
-        targetY = px * maxAngle;    // 左负右正
+        // ✅ 关键修改：反转旋转方向以匹配直觉
+        // 因为CSS的rotateX(正值)是向下，rotateY(正值)是向左
+        // 所以我们需要反直觉地设置：
+        // - 鼠标在上方(py为负) → 卡片应该向上旋转 → rotateX需要负值
+        // - 鼠标在右侧(px为正) → 卡片应该向右旋转 → rotateY需要负值
+        targetX = py * maxAngle;   // 鼠标上 → rotateX负值 → 向上旋转
+        targetY = -px * maxAngle;  // 鼠标右 → rotateY负值 → 向右旋转
     }
 
     currentTiltX += (targetX - currentTiltX) * 0.1;
