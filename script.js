@@ -1,5 +1,5 @@
 // ============================================
-// 1. 纯输入数据
+// 1. 基础输入数据
 // ============================================
 var mouseX = window.innerWidth / 2;
 var mouseY = window.innerHeight / 2;
@@ -13,7 +13,11 @@ var flipRotation = 0;
 var currentTiltX = 0;
 var currentTiltY = 0;
 
-// DOM（4层结构）
+// 陀螺仪零点
+var gyroBaseX = null; // beta 零点
+var gyroBaseY = null; // gamma 零点
+
+// DOM
 var cardScaleWrapper = document.getElementById('cardScaleWrapper');
 var cardFlipContainer = document.getElementById('cardFlipContainer');
 var cardTiltY = document.getElementById('cardTiltY');
@@ -29,7 +33,7 @@ var fireworksContainer = document.getElementById('fireworksContainer');
 // 2. 输入层
 // ============================================
 
-// 鼠标：只在 mouse 模式下有效
+// 鼠标
 window.addEventListener('mousemove', function(e) {
     if (inputMode === 'mouse') {
         mouseX = e.clientX;
@@ -37,15 +41,25 @@ window.addEventListener('mousemove', function(e) {
     }
 });
 
-// 陀螺仪：一触发就接管
+// 陀螺仪
 function handleOrientation(event) {
     if (event.beta !== null && event.gamma !== null) {
         inputMode = 'gyro';
-        gyroTargetX = Math.max(-12, Math.min(12, event.beta / 3));
-        gyroTargetY = Math.max(-12, Math.min(12, event.gamma / 3));
+
+        // 🔹 初始化零点
+        if (gyroBaseX === null) gyroBaseX = event.beta;
+        if (gyroBaseY === null) gyroBaseY = event.gamma;
+
+        // 基于零点偏移
+        var adjustedBeta = event.beta - gyroBaseX;
+        var adjustedGamma = event.gamma - gyroBaseY;
+
+        gyroTargetX = Math.max(-12, Math.min(12, adjustedBeta / 3));
+        gyroTargetY = Math.max(-12, Math.min(12, adjustedGamma / 3));
     }
 }
 
+// Safari / iOS 处理
 if (typeof DeviceOrientationEvent !== 'undefined') {
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
         document.addEventListener('touchstart', function() {
@@ -64,45 +78,41 @@ if (typeof DeviceOrientationEvent !== 'undefined') {
 }
 
 // ============================================
-// 3. 唯一 rAF 循环
+// 3. rAF 循环
 // ============================================
 function renderLoop() {
     var targetTiltX = 0;
     var targetTiltY = 0;
     
     if (inputMode === 'gyro') {
-        // 陀螺仪：低通滤波
         gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.1;
         gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.1;
-        
         targetTiltX = gyroCurrentX;
         targetTiltY = gyroCurrentY;
     } else {
-        // 鼠标：相对 cardFlipContainer 中心
         var rect = cardFlipContainer.getBoundingClientRect();
         var cx = rect.left + rect.width / 2;
         var cy = rect.top + rect.height / 2;
-        
         var dx = mouseX - cx;
         var dy = mouseY - cy;
-        
         var nx = dx / (rect.width / 2);
         var ny = dy / (rect.height / 2);
-        
         nx = Math.max(-1, Math.min(1, nx));
         ny = Math.max(-1, Math.min(1, ny));
-        
         targetTiltX = -ny * 12;
         targetTiltY = nx * 12;
     }
     
-    // 插值
     currentTiltX += (targetTiltX - currentTiltX) * 0.1;
     currentTiltY += (targetTiltY - currentTiltY) * 0.1;
     
-    // 分层写入：X轴和Y轴分离
-    cardTiltX.style.transform = 'rotateX(' + currentTiltX + 'deg)';
-    cardTiltY.style.transform = 'rotateY(' + currentTiltY + 'deg)';
+    // 🔹 背面翻转 tilt 修正
+    var isBack = (flipRotation / 180) % 2 === 1;
+    var appliedTiltX = currentTiltX;
+    var appliedTiltY = isBack ? -currentTiltY : currentTiltY;
+
+    cardTiltX.style.transform = 'rotateX(' + appliedTiltX + 'deg)';
+    cardTiltY.style.transform = 'rotateY(' + appliedTiltY + 'deg)';
     
     requestAnimationFrame(renderLoop);
 }
@@ -110,22 +120,21 @@ function renderLoop() {
 renderLoop();
 
 // ============================================
-// 4. 翻转（单独一层，单方向累加）
+// 4. 翻转
 // ============================================
 cardFlipContainer.addEventListener('click', function() {
-    flipRotation += 180; // 单方向累加
+    flipRotation += 180;
     cardFlipContainer.style.transform = 'rotateY(' + flipRotation + 'deg)';
 });
 
 // ============================================
-// 5. Scroll（只改 scale/opacity，不碰 rotate）
+// 5. Scroll 动画
 // ============================================
 window.addEventListener('scroll', function() {
     var scrollY = window.scrollY;
     
     var cardOpacity = Math.max(0, 1 - scrollY / 400);
     var cardScale = Math.max(0.8, 1 - scrollY / 1000);
-    
     cardScaleWrapper.style.opacity = cardOpacity;
     cardScaleWrapper.style.transform = 'scale(' + cardScale + ')';
     
@@ -148,7 +157,7 @@ window.addEventListener('scroll', function() {
 });
 
 // ============================================
-// 6. Easter Egg
+// 6. Easter Egg & Fireworks
 // ============================================
 function createFirework() {
     var x = Math.random() * window.innerWidth;
@@ -160,16 +169,13 @@ function createFirework() {
         particle.className = 'firework-particle';
         particle.style.left = x + 'px';
         particle.style.top = y + 'px';
-        
         var angle = (Math.PI * 2 * i) / 40;
         var velocity = 1.5 + Math.random() * 1.5;
         var distance = velocity * 150;
         var tx = Math.cos(angle) * distance;
         var ty = Math.sin(angle) * distance;
-        
         particle.style.backgroundColor = 'hsl(' + hue + ', 100%, 60%)';
         particle.style.boxShadow = '0 0 15px hsl(' + hue + ', 100%, 60%)';
-        
         fireworksContainer.appendChild(particle);
         
         (function(p, targetX, targetY) {
@@ -177,20 +183,15 @@ function createFirework() {
             function animateParticle(timestamp) {
                 if (!start) start = timestamp;
                 var progress = (timestamp - start) / 1500;
-                
                 if (progress < 1) {
                     var currentX = targetX * progress;
                     var currentY = targetY * progress;
                     var scale = 1 - progress;
                     var opacity = 1 - progress;
-                    
                     p.style.transform = 'translate(' + currentX + 'px, ' + currentY + 'px) scale(' + scale + ')';
                     p.style.opacity = opacity;
-                    
                     requestAnimationFrame(animateParticle);
-                } else {
-                    p.remove();
-                }
+                } else { p.remove(); }
             }
             requestAnimationFrame(animateParticle);
         })(particle, tx, ty);
@@ -200,9 +201,7 @@ function createFirework() {
 function launchFireworks() {
     for (var i = 0; i < 6; i++) {
         (function(index) {
-            setTimeout(function() {
-                createFirework();
-            }, index * 150);
+            setTimeout(function() { createFirework(); }, index * 150);
         })(i);
     }
 }
@@ -212,10 +211,8 @@ function handleEasterEgg() {
     if (value === 'sherman') {
         secretInput.value = '';
         heartContainer.classList.add('show');
-        
         launchFireworks();
         var fireworksTimer = setInterval(launchFireworks, 1200);
-        
         setTimeout(function() {
             heartContainer.classList.remove('show');
             clearInterval(fireworksTimer);
@@ -226,7 +223,5 @@ function handleEasterEgg() {
 
 secretButton.addEventListener('click', handleEasterEgg);
 secretInput.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        handleEasterEgg();
-    }
+    if (e.key === 'Enter') handleEasterEgg();
 });
