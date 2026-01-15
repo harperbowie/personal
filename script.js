@@ -5,6 +5,7 @@ var mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
 var gyroTargetX = 0, gyroTargetY = 0, gyroCurrentX = 0, gyroCurrentY = 0;
 var inputMode = 'mouse';
 var flipAngle = 0, currentTiltX = 0, currentTiltY = 0;
+var initialBeta = null, initialGamma = null;  // 初始设备方向
 
 // DOM
 var cardFlip = document.getElementById('cardFlip');
@@ -61,8 +62,27 @@ function enableGyroscope() {
     }
 }
 
-// 页面加载后调用该方法来启用陀螺仪
+// 页面加载时启用陀螺仪
 enableGyroscope();
+
+// =================
+// 获取设备初始方向
+// =================
+function getInitialOrientation(event) {
+    if (event.beta !== null && event.gamma !== null) {
+        // 仅在第一次获取设备方向时记录
+        if (initialBeta === null || initialGamma === null) {
+            initialBeta = event.beta;
+            initialGamma = event.gamma;
+            console.log("初始方向已记录: beta =", initialBeta, "gamma =", initialGamma);
+            // 停止继续监听
+            window.removeEventListener('deviceorientation', getInitialOrientation);
+        }
+    }
+}
+
+// 只记录初始方向
+window.addEventListener('deviceorientation', getInitialOrientation, true);
 
 // =================
 // 重置陀螺仪状态
@@ -73,7 +93,13 @@ window.addEventListener('load', () => {
     gyroCurrentY = 0;
     currentTiltX = 0;
     currentTiltY = 0;
-    cardTilt.style.transform = 'rotateX(0deg) rotateY(0deg)';
+    
+    // 使用刷新时记录的初始方向（如果有）
+    if (initialBeta !== null && initialGamma !== null) {
+        gyroCurrentX = initialBeta;
+        gyroCurrentY = initialGamma;
+        cardTilt.style.transform = `rotateX(${gyroCurrentX}deg) rotateY(${gyroCurrentY}deg)`;
+    }
 });
 
 // =================
@@ -159,37 +185,46 @@ function createFirework() {
 
         (function (p, targetX, targetY) {
             let start = null;
-            function animate(timestamp) {
+            function animateParticle(timestamp) {
                 if (!start) start = timestamp;
                 let progress = (timestamp - start) / 1500;
                 if (progress < 1) {
-                    let cx = targetX * progress, cy = targetY * progress, scale = 1 - progress, opacity = 1 - progress;
-                    p.style.transform = `translate(${cx}px,${cy}px) scale(${scale})`;
+                    let currentX = targetX * progress;
+                    let currentY = targetY * progress;
+                    let scale = 1 - progress;
+                    let opacity = 1 - progress;
+                    p.style.transform = `translate(${currentX}px,${currentY}px) scale(${scale})`;
                     p.style.opacity = opacity;
-                    requestAnimationFrame(animate);
-                } else { p.remove(); }
+                    requestAnimationFrame(animateParticle);
+                } else {
+                    p.remove();
+                }
             }
-            requestAnimationFrame(animate);
+            requestAnimationFrame(animateParticle);
         })(particle, tx, ty);
     }
 }
 
 function launchFireworks() {
     for (let i = 0; i < 6; i++) {
-        setTimeout(createFirework, i * 150);
+        (function (index) {
+            setTimeout(() => {
+                createFirework();
+            }, index * 150);
+        })(i);
     }
 }
 
 function handleEasterEgg() {
-    const value = secretInput.value.toLowerCase().trim();
+    let value = secretInput.value.toLowerCase().trim();
     if (value === 'sherman') {
         secretInput.value = '';
         heartContainer.classList.add('show');
         launchFireworks();
-        const timer = setInterval(launchFireworks, 1200);
+        let fireworksTimer = setInterval(launchFireworks, 1200);
         setTimeout(() => {
             heartContainer.classList.remove('show');
-            clearInterval(timer);
+            clearInterval(fireworksTimer);
             fireworksContainer.innerHTML = '';
         }, 6000);
     }
