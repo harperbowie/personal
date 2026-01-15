@@ -1,175 +1,64 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Card</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
-
-<style>
-* {
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-}
-
-html, body {
-  margin: 0;
-  height: 100%;
-  background: #fff;
-  overflow-x: hidden;
-}
-
-body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.scene {
-  perspective: 1400px;
-}
-
-.card-wrapper {
-  width: clamp(260px, 70vw, 360px);
-  aspect-ratio: 3 / 2;
-}
-
-.card {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  transform-style: preserve-3d;
-  transition: transform 0.8s cubic-bezier(.2,.8,.2,1);
-  cursor: pointer;
-}
-
-.card-face {
-  position: absolute;
-  inset: 0;
-  border-radius: 16px;
-  backface-visibility: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Playfair Display', serif;
-  box-shadow: 0 25px 60px rgba(0,0,0,.12);
-}
-
-.front {
-  background: #ffffff;
-}
-
-.back {
-  background: #ffffff;
-  transform: rotateY(-180deg);
-  flex-direction: column;
-  gap: 12px;
-}
-
-.card.flipped {
-  transform: rotateY(-180deg);
-}
-
-h1, p {
-  margin: 0;
-  color: #000;
-}
-
-p {
-  font-size: 14px;
-  opacity: .6;
-}
-</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Harper Bowie</title>
+<link rel="stylesheet" href="style.css">
 </head>
-
 <body>
+<div class="container">
+    <!-- Fireworks Container -->
+    <div class="fireworks-container" id="fireworksContainer"></div>
 
-<div class="scene">
-  <div class="card-wrapper">
-    <div class="card" id="card">
-      <div class="card-face front">
-        <h1>Harper Bowie</h1>
-      </div>
-      <div class="card-face back">
-        <h1>Curious about what's next</h1>
-        <p>Learn by doing</p>
-      </div>
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <div class="card-scale-wrapper" id="cardScaleWrapper">
+            <div class="card-flip-container" id="cardFlip">
+                <div class="card-tilt" id="cardTilt">
+                    <!-- 正面 -->
+                    <div class="card-face card-front">
+                        <h1 class="card-title">Harper Bowie</h1>
+                    </div>
+                    <!-- 背面 -->
+                    <div class="card-face card-back">
+                        <div class="card-tagline">Curious about what's next.</div>
+                        <div class="card-subtitle card-title">Learning by doing.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="contact-button" onclick="window.location.href='mailto:harper.ops.work@gmail.com'">
+            harper.ops.work@gmail.com
+        </button>
     </div>
-  </div>
+
+    <!-- About Section -->
+    <div class="about-section" id="aboutSection">
+        <h2 class="about-title">Harper Bowie</h2>
+        <div class="about-content">
+            <div class="about-item">• 独立搭建并维护海外服务器与私人独享节点</div>
+            <div class="about-item">• 理解网络与基础设施的真实工作方式</div>
+            <div class="about-item">• 持续关注并参与 Web3 与去中心化生态</div>
+        </div>
+        <div class="divider"></div>
+        <div class="about-content">
+            <div class="about-item">• Independently build and maintain overseas servers and a private dedicated node</div>
+            <div class="about-item">• Understand how networks and infrastructure actually work</div>
+            <div class="about-item">• Actively following and participating in Web3 and decentralized ecosystems</div>
+        </div>
+    </div>
+
+    <!-- Secret Section -->
+    <div class="secret-section">
+        <div class="heart-container" id="heartContainer">❤️</div>
+        <div class="input-group" id="inputGroup">
+            <input type="text" class="secret-input" id="secretInput" placeholder="Type something..." />
+            <button class="secret-button" id="secretButton">➤</button>
+        </div>
+    </div>
 </div>
-
-<script>
-const card = document.getElementById('card');
-let isFlipped = false;
-let targetX = 0;
-let targetY = 0;
-let currentX = 0;
-let currentY = 0;
-
-function animate() {
-  currentX += (targetX - currentX) * 0.08;
-  currentY += (targetY - currentY) * 0.08;
-
-  card.style.transform =
-    `rotateY(${isFlipped ? -180 : 0}deg)
-     rotateX(${currentY}deg)
-     rotateY(${currentX}deg)`;
-
-  requestAnimationFrame(animate);
-}
-animate();
-
-/* 鼠标 */
-window.addEventListener('mousemove', e => {
-  const x = (e.clientX / window.innerWidth - 0.5) * 12;
-  const y = (0.5 - e.clientY / window.innerHeight) * 12;
-  targetX = x;
-  targetY = y;
-});
-
-window.addEventListener('mouseleave', () => {
-  targetX = 0;
-  targetY = 0;
-});
-
-/* 点击翻转（统一逆时针） */
-card.addEventListener('click', async () => {
-  isFlipped = !isFlipped;
-
-  // iOS 陀螺仪权限
-  if (
-    typeof DeviceOrientationEvent !== 'undefined' &&
-    typeof DeviceOrientationEvent.requestPermission === 'function'
-  ) {
-    try {
-      await DeviceOrientationEvent.requestPermission();
-    } catch {}
-  }
-});
-
-/* 陀螺仪 */
-window.addEventListener('deviceorientation', e => {
-  if (e.beta === null) return;
-
-  const x = Math.max(-15, Math.min(15, e.gamma / 2));
-  const y = Math.max(-15, Math.min(15, e.beta / 3));
-  targetX = x;
-  targetY = -y;
-});
-
-/* 滚动弹入 */
-const observer = new IntersectionObserver(entries => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      card.style.opacity = 1;
-      card.style.transform += ' scale(1)';
-    }
-  });
-}, { threshold: 0.5 });
-
-observer.observe(card);
-</script>
-
+<script src="script.js"></script>
 </body>
 </html>
