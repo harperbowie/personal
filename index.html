@@ -13,12 +13,17 @@
 
     <!-- Hero Section -->
     <div class="hero-section">
+        <!-- 第1层：scale + opacity（不影响 3D）-->
         <div class="card-scale-wrapper" id="cardScaleWrapper">
+            <!-- 第2层：Y轴翻转（flip）-->
             <div class="card-flip-container" id="cardFlip">
+                <!-- 第3层：X+Y倾斜（tilt）-->
                 <div class="card-tilt" id="cardTilt">
+                    <!-- 正面 -->
                     <div class="card-face card-front">
                         <h1 class="card-title">Harper Bowie</h1>
                     </div>
+                    <!-- 背面 -->
                     <div class="card-face card-back">
                         <div class="card-tagline">Curious about what's next.</div>
                         <div class="card-subtitle">Learning by doing.</div>
@@ -26,7 +31,10 @@
                 </div>
             </div>
         </div>
-        <button class="contact-button" onclick="window.location.href='mailto:harper.ops.work@gmail.com'">harper.ops.work@gmail.com</button>
+
+        <button class="contact-button" onclick="window.location.href='mailto:harper.ops.work@gmail.com'">
+            harper.ops.work@gmail.com
+        </button>
     </div>
 
     <!-- About Section -->
@@ -54,6 +62,7 @@
         </div>
     </div>
 </div>
+
 <script src="script.js"></script>
 </body>
 </html>
