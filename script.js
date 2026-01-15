@@ -4,7 +4,7 @@
 var mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
 var gyroTargetX = 0, gyroTargetY = 0;
 var gyroCurrentX = 0, gyroCurrentY = 0;
-var initialGyroX = null, initialGyroY = null; // 初始方向
+var initialGyroX = null, initialGyroY = null; // 初始方向（零点）
 var inputMode = 'mouse';
 var flipAngle = 0, currentTiltX = 0, currentTiltY = 0;
 
@@ -35,18 +35,21 @@ window.addEventListener('mousemove', e => {
 });
 
 // ======================
-// 陀螺仪输入（立即锁定初始方向）
+// 陀螺仪输入（第一次事件锁定零点）
 // ======================
+var gyroReady = false; // 是否已经锁定零点
+
 function handleOrientation(event) {
     if (event.beta === null || event.gamma === null) return;
 
     inputMode = 'gyro';
 
-    // 第一次触发时立即记录初始方向
-    if (initialGyroX === null || initialGyroY === null) {
+    // 第一次事件锁定零点
+    if (!gyroReady) {
         initialGyroX = event.beta;
         initialGyroY = event.gamma;
-        console.log('📱 初始方向固定：', initialGyroX.toFixed(1), initialGyroY.toFixed(1));
+        gyroReady = true;
+        console.log('📱 零点锁定：', initialGyroX.toFixed(1), initialGyroY.toFixed(1));
     }
 
     // 计算偏移
@@ -59,7 +62,6 @@ function handleOrientation(event) {
 // ======================
 function enableGyroscope() {
     if (isSafari && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        // iOS Safari 需要用户点击才能请求权限
         document.addEventListener('click', function () {
             DeviceOrientationEvent.requestPermission()
                 .then(response => {
@@ -82,13 +84,14 @@ enableGyroscope();
 function renderLoop() {
     let targetX = 0, targetY = 0;
 
-    if (inputMode === 'gyro') {
-        // 低通滤波
+    if (inputMode === 'gyro' && gyroReady) {
+        // 陀螺仪低通滤波
         gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.1;
         gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.1;
         targetX = gyroCurrentX;
         targetY = gyroCurrentY;
     } else {
+        // 鼠标控制或未锁定零点前
         const rect = cardFlip.getBoundingClientRect();
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
