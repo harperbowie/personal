@@ -32,9 +32,9 @@ window.addEventListener('mousemove', e => {
 function handleOrientation(event) {
     if (event.beta !== null && event.gamma !== null) {
         inputMode = 'gyro';
-        // 增加幅度，让旋转更明显
-        gyroTargetX = Math.max(-24, Math.min(24, event.beta / 2)); // 增加幅度
-        gyroTargetY = Math.max(-24, Math.min(24, event.gamma / 2)); // 增加幅度
+        // 增加幅度
+        gyroTargetX = Math.max(-24, Math.min(24, event.beta / 2));
+        gyroTargetY = Math.max(-24, Math.min(24, event.gamma / 2));
     }
 }
 
@@ -47,21 +47,22 @@ function enableGyroscope() {
                     .then(response => {
                         if (response === 'granted') {
                             window.addEventListener('deviceorientation', handleOrientation, true);
-                            console.log('✅ 陀螺仪已启用');
-                        } else {
-                            console.error('❌ 用户拒绝陀螺仪权限');
+                            console.log('✅ Safari 陀螺仪已启用');
                         }
                     })
                     .catch(console.error);
             }, { once: true });
         }
     } else {
-        // 非 Safari 浏览器直接启用
-        window.addEventListener('deviceorientation', handleOrientation, true);
+        // 非 Safari 浏览器，自动绑定
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientation', handleOrientation, true);
+            console.log('✅ 非 Safari 移动端陀螺仪已自动启用');
+        }
     }
 }
 
-// 页面加载后调用该方法来启用陀螺仪
+// 页面加载后启用陀螺仪
 enableGyroscope();
 
 // =================
@@ -163,9 +164,7 @@ function createFirework() {
 }
 
 function launchFireworks() {
-    for (let i = 0; i < 6; i++) {
-        setTimeout(createFirework, i * 150);
-    }
+    for (let i = 0; i < 6; i++) setTimeout(createFirework, i * 150);
 }
 
 function handleEasterEgg() {
