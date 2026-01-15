@@ -1,206 +1,133 @@
 // ======================
-// 输入数据
+// 陀螺仪输入 - 改进版本
 // ======================
-var mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
-var gyroTargetX = 0, gyroTargetY = 0;
-var gyroCurrentX = 0, gyroCurrentY = 0;
-var initialGyroX = null, initialGyroY = null; // 记录设备当前方向
-var inputMode = 'mouse';
-var flipAngle = 0, currentTiltX = 0, currentTiltY = 0;
+let isGyroInitialized = false;
+let calibrationSamples = [];
+const CALIBRATION_SAMPLE_COUNT = 10; // 采集10个样本求平均
 
-// DOM
-var cardFlip = document.getElementById('cardFlip');
-var cardTilt = document.getElementById('cardTilt');
-var cardScaleWrapper = document.getElementById('cardScaleWrapper');
-var aboutSection = document.getElementById('aboutSection');
-var inputGroup = document.getElementById('inputGroup');
-var secretInput = document.getElementById('secretInput');
-var secretButton = document.getElementById('secretButton');
-var heartContainer = document.getElementById('heartContainer');
-var fireworksContainer = document.getElementById('fireworksContainer');
-
-// ======================
-// 判断是否 Safari
-// ======================
-var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
-// ======================
-// 鼠标输入
-// ======================
-window.addEventListener('mousemove', e => {
-    if (inputMode === 'mouse') {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-    }
-});
-
-// ======================
-// 陀螺仪输入
-// ======================
 function handleOrientation(event) {
     if (event.beta === null || event.gamma === null) return;
-
+    
     inputMode = 'gyro';
-
-    // 第一次触发时记录初始方向
-    if (initialGyroX === null || initialGyroY === null) {
-        initialGyroX = event.beta;
-        initialGyroY = event.gamma;
-        console.log('📱 初始方向记录：', initialGyroX.toFixed(1), initialGyroY.toFixed(1));
+    
+    // 校准阶段：收集样本
+    if (!isGyroInitialized) {
+        calibrationSamples.push({
+            beta: event.beta,
+            gamma: event.gamma
+        });
+        
+        // 收集足够的样本后计算平均初始值
+        if (calibrationSamples.length >= CALIBRATION_SAMPLE_COUNT) {
+            const avgBeta = calibrationSamples.reduce((sum, s) => sum + s.beta, 0) / calibrationSamples.length;
+            const avgGamma = calibrationSamples.reduce((sum, s) => sum + s.gamma, 0) / calibrationSamples.length;
+            
+            initialGyroX = avgBeta;
+            initialGyroY = avgGamma;
+            isGyroInitialized = true;
+            
+            console.log('📱 陀螺仪校准完成，初始方向：', 
+                initialGyroX.toFixed(1), initialGyroY.toFixed(1));
+        } else {
+            // 校准期间不更新目标值
+            return;
+        }
     }
-
-    // 相对于初始方向的偏移（放大幅度）
-    gyroTargetX = Math.max(-30, Math.min(30, (event.beta - initialGyroX) * 0.8));
-    gyroTargetY = Math.max(-30, Math.min(30, (event.gamma - initialGyroY) * 0.8));
-}
-
-// ======================
-// 启用陀螺仪
-// ======================
-function enableGyroscope() {
-    if (isSafari && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        document.addEventListener('click', function () {
-            DeviceOrientationEvent.requestPermission()
-                .then(response => {
-                    if (response === 'granted') {
-                        window.addEventListener('deviceorientation', handleOrientation, true);
-                        console.log('✅ Safari 陀螺仪启用');
-                    }
-                })
-                .catch(console.error);
-        }, { once: true });
+    
+    // 计算相对于初始方向的偏移
+    const beta = event.beta || 0;
+    const gamma = event.gamma || 0;
+    
+    // 注意：这里需要根据设备方向调整映射关系
+    // 根据设备方向调整坐标系
+    const isPortrait = window.innerHeight > window.innerWidth;
+    
+    let xOffset, yOffset;
+    
+    if (isPortrait) {
+        // 竖屏模式
+        xOffset = (beta - initialGyroX) * 0.8;
+        yOffset = (gamma - initialGyroY) * 0.8;
     } else {
-        window.addEventListener('deviceorientation', handleOrientation, true);
+        // 横屏模式 - 需要调整映射
+        xOffset = (gamma - initialGyroY) * 0.8;
+        yOffset = -(beta - initialGyroX) * 0.8;
     }
+    
+    // 限制范围
+    gyroTargetX = Math.max(-30, Math.min(30, xOffset));
+    gyroTargetY = Math.max(-30, Math.min(30, yOffset));
 }
-enableGyroscope();
 
 // ======================
-// 渲染循环
+// 重新校准陀螺仪（可选）
 // ======================
-function renderLoop() {
-    let targetX = 0, targetY = 0;
-
-    if (inputMode === 'gyro') {
-        // 低通滤波
-        gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.1;
-        gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.1;
-        targetX = gyroCurrentX;
-        targetY = gyroCurrentY;
-    } else {
-        const rect = cardFlip.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        const dx = mouseX - cx;
-        const dy = mouseY - cy;
-        targetX = (-dy / (rect.height / 2)) * 6;
-        targetY = (dx / (rect.width / 2)) * 6;
-    }
-
-    currentTiltX += (targetX - currentTiltX) * 0.1;
-    currentTiltY += (targetY - currentTiltY) * 0.1;
-
-    cardTilt.style.transform = `rotateX(${currentTiltX}deg) rotateY(${currentTiltY}deg)`;
-
-    requestAnimationFrame(renderLoop);
+function recalibrateGyroscope() {
+    isGyroInitialized = false;
+    calibrationSamples = [];
+    initialGyroX = null;
+    initialGyroY = null;
+    gyroCurrentX = 0;
+    gyroCurrentY = 0;
+    gyroTargetX = 0;
+    gyroTargetY = 0;
+    
+    console.log('🔄 陀螺仪重新校准中...');
 }
-renderLoop();
 
 // ======================
-// 点击翻转
+// 页面加载时等待设备稳定
 // ======================
-cardFlip.addEventListener('click', () => {
-    flipAngle += 180;
-    cardFlip.style.transform = `rotateY(${flipAngle}deg)`;
-    currentTiltX = 0;
-    currentTiltY = 0;
+let gyroInitTimeout;
+let isPageLoaded = false;
+
+window.addEventListener('load', () => {
+    isPageLoaded = true;
+    
+    // 页面加载后延迟一段时间才开始校准
+    clearTimeout(gyroInitTimeout);
+    gyroInitTimeout = setTimeout(() => {
+        if (!isGyroInitialized) {
+            console.log('⏳ 设备未稳定，强制结束校准');
+            isGyroInitialized = true;
+        }
+    }, 2000); // 2秒后强制结束校准
 });
 
 // ======================
-// Scroll效果
+// 添加重新校准按钮（可选）
 // ======================
-window.addEventListener('scroll', () => {
-    const scrollY = window.scrollY;
-    let cardOpacity = Math.max(0, 1 - scrollY / 400);
-    let cardScale = Math.max(0.8, 1 - scrollY / 1000);
-    cardScaleWrapper.style.opacity = cardOpacity;
-    cardScaleWrapper.style.transform = `scale(${cardScale})`;
-
-    const aboutScrollStart = 200, aboutScrollEnd = 500, aboutFadeOut = 1200;
-    const aboutOpacity = scrollY < aboutFadeOut
-        ? Math.min(1, Math.max(0, (scrollY - aboutScrollStart) / (aboutScrollEnd - aboutScrollStart)))
-        : Math.max(0, 1 - (scrollY - aboutFadeOut) / 300);
-    const aboutTranslateY = scrollY < aboutFadeOut
-        ? Math.max(0, 50 - (scrollY - aboutScrollStart) / 8)
-        : Math.max(0, -30 + (scrollY - aboutFadeOut) / 10);
-    aboutSection.style.opacity = aboutOpacity;
-    aboutSection.style.transform = `translateY(${aboutTranslateY}px)`;
-
-    const secretOpacity = Math.min(1, Math.max(0, (scrollY - 1400) / 300));
-    const secretTranslateY = Math.max(0, 30 - (scrollY - 1400) / 10);
-    inputGroup.style.opacity = secretOpacity;
-    inputGroup.style.transform = `translateY(${secretTranslateY}px)`;
+document.addEventListener('DOMContentLoaded', () => {
+    const recalibrateBtn = document.createElement('button');
+    recalibrateBtn.textContent = '重新校准陀螺仪';
+    recalibrateBtn.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        padding: 8px 16px;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+    `;
+    recalibrateBtn.addEventListener('click', recalibrateGyroscope);
+    document.body.appendChild(recalibrateBtn);
 });
 
 // ======================
-// Easter Egg
+// 处理设备方向变化（横竖屏切换）
 // ======================
-function createFirework() {
-    let x = Math.random() * window.innerWidth;
-    let y = Math.random() * window.innerHeight * 0.7 + 100;
-    let hue = Math.random() * 360;
+let lastOrientation = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
 
-    for (let i = 0; i < 40; i++) {
-        let particle = document.createElement('div');
-        particle.className = 'firework-particle';
-        particle.style.left = x + 'px';
-        particle.style.top = y + 'px';
-        let angle = (Math.PI * 2 * i) / 40;
-        let velocity = 1.5 + Math.random() * 1.5;
-        let distance = velocity * 150;
-        let tx = Math.cos(angle) * distance;
-        let ty = Math.sin(angle) * distance;
-        particle.style.backgroundColor = `hsl(${hue},100%,60%)`;
-        particle.style.boxShadow = `0 0 15px hsl(${hue},100%,60%)`;
-        fireworksContainer.appendChild(particle);
-
-        (function (p, targetX, targetY) {
-            let start = null;
-            function animate(timestamp) {
-                if (!start) start = timestamp;
-                let progress = (timestamp - start) / 1500;
-                if (progress < 1) {
-                    let cx = targetX * progress, cy = targetY * progress, scale = 1 - progress, opacity = 1 - progress;
-                    p.style.transform = `translate(${cx}px,${cy}px) scale(${scale})`;
-                    p.style.opacity = opacity;
-                    requestAnimationFrame(animate);
-                } else p.remove();
-            }
-            requestAnimationFrame(animate);
-        })(particle, tx, ty);
+window.addEventListener('resize', () => {
+    const currentOrientation = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
+    
+    if (currentOrientation !== lastOrientation) {
+        console.log('📱 屏幕方向改变，重新校准陀螺仪');
+        recalibrateGyroscope();
+        lastOrientation = currentOrientation;
     }
-}
-
-function launchFireworks() {
-    for (let i = 0; i < 6; i++) setTimeout(createFirework, i * 150);
-}
-
-function handleEasterEgg() {
-    const value = secretInput.value.toLowerCase().trim();
-    if (value === 'sherman') {
-        secretInput.value = '';
-        heartContainer.classList.add('show');
-        launchFireworks();
-        const timer = setInterval(launchFireworks, 1200);
-        setTimeout(() => {
-            heartContainer.classList.remove('show');
-            clearInterval(timer);
-            fireworksContainer.innerHTML = '';
-        }, 6000);
-    }
-}
-
-secretButton.addEventListener('click', handleEasterEgg);
-secretInput.addEventListener('keypress', e => {
-    if (e.key === 'Enter') handleEasterEgg();
 });
