@@ -11,6 +11,7 @@ var inputMode = 'mouse';
 var flipRotation = 0;
 var currentTiltX = 0;
 var currentTiltY = 0;
+var isFlipping = false; // 翻转状态标记
 
 // 陀螺仪校准基准值（用于记录初始姿势）
 var gyroBaselineBeta = null;
@@ -109,30 +110,36 @@ function renderLoop(){
     var targetTiltX = 0;
     var targetTiltY = 0;
 
-    if(inputMode === 'gyro'){
-        // 陀螺仪：低通滤波（平滑过渡）
-        gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.1;
-        gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.1;
-        targetTiltX = gyroCurrentX;
-        targetTiltY = gyroCurrentY;
-    } else {
-        // 鼠标：相对 cardFlipContainer 中心
-        var rect = cardFlipContainer.getBoundingClientRect();
-        var cx = rect.left + rect.width / 2;
-        var cy = rect.top + rect.height / 2;
-        var dx = mouseX - cx;
-        var dy = mouseY - cy;
-        var nx = dx / (rect.width / 2);
-        var ny = dy / (rect.height / 2);
-        nx = Math.max(-1, Math.min(1, nx));
-        ny = Math.max(-1, Math.min(1, ny));
-        targetTiltX = -ny * 12;
-        targetTiltY = nx * 12;
-    }
+    // 翻转时不响应输入
+    if(!isFlipping){
+        if(inputMode === 'gyro'){
+            // 陀螺仪：低通滤波（平滑过渡）
+            gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.1;
+            gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.1;
+            targetTiltX = gyroCurrentX;
+            targetTiltY = gyroCurrentY;
+        } else {
+            // 鼠标：相对视口中心计算（修复偏移问题）
+            var centerX = window.innerWidth / 2;
+            var centerY = window.innerHeight / 2;
+            
+            // 计算鼠标相对于中心的归一化位置 (-1 到 1)
+            var nx = (mouseX - centerX) / centerX;
+            var ny = (mouseY - centerY) / centerY;
+            
+            // 限制范围
+            nx = Math.max(-1, Math.min(1, nx));
+            ny = Math.max(-1, Math.min(1, ny));
+            
+            // 映射到倾斜角度
+            targetTiltX = -ny * 12; // Y轴控制X方向旋转（上下倾斜）
+            targetTiltY = nx * 12;  // X轴控制Y方向旋转（左右倾斜）
+        }
 
-    // 插值（额外平滑）
-    currentTiltX += (targetTiltX - currentTiltX) * 0.1;
-    currentTiltY += (targetTiltY - currentTiltY) * 0.1;
+        // 插值（额外平滑）
+        currentTiltX += (targetTiltX - currentTiltX) * 0.1;
+        currentTiltY += (targetTiltY - currentTiltY) * 0.1;
+    }
 
     // 分层写入DOM
     cardTiltX.style.transform = 'rotateX(' + currentTiltX + 'deg)';
@@ -143,11 +150,24 @@ function renderLoop(){
 renderLoop();
 
 // ============================================
-// 4. 翻转（Y轴累加，始终一个方向）
+// 4. 翻转（Y轴累加，始终一个方向，不受点击位置影响）
 // ============================================
-cardFlipContainer.addEventListener('click', function(){
+cardFlipContainer.addEventListener('click', function(e){
+    // 防止翻转动画期间重复触发
+    if(isFlipping) return;
+    
+    isFlipping = true;
     flipRotation += 180;
+    
+    // 设置过渡动画
+    cardFlipContainer.style.transition = 'transform 0.8s cubic-bezier(0.4, 0.0, 0.2, 1)';
     cardFlipContainer.style.transform = 'rotateY(' + flipRotation + 'deg)';
+    
+    // 动画结束后恢复状态
+    setTimeout(function(){
+        cardFlipContainer.style.transition = '';
+        isFlipping = false;
+    }, 800);
 });
 
 // ============================================
