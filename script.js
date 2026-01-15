@@ -13,10 +13,11 @@ var flipRotation = 0;
 var currentTiltX = 0;
 var currentTiltY = 0;
 
-// DOM（三层结构）
-var cardWrapper = document.getElementById('cardWrapper');
-var cardContainer = document.getElementById('cardContainer');
-var cardInner = document.getElementById('cardInner');
+// DOM（4层结构）
+var cardScaleWrapper = document.getElementById('cardScaleWrapper');
+var cardFlipContainer = document.getElementById('cardFlipContainer');
+var cardTiltY = document.getElementById('cardTiltY');
+var cardTiltX = document.getElementById('cardTiltX');
 var aboutSection = document.getElementById('aboutSection');
 var inputGroup = document.getElementById('inputGroup');
 var secretInput = document.getElementById('secretInput');
@@ -28,22 +29,20 @@ var fireworksContainer = document.getElementById('fireworksContainer');
 // 2. 输入层
 // ============================================
 
-// 鼠标
+// 鼠标：只在 mouse 模式下有效
 window.addEventListener('mousemove', function(e) {
-    mouseX = e.clientX;
-    mouseY = e.clientY;
-    inputMode = 'mouse';
+    if (inputMode === 'mouse') {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+    }
 });
 
-// 陀螺仪
+// 陀螺仪：一触发就接管
 function handleOrientation(event) {
     if (event.beta !== null && event.gamma !== null) {
+        inputMode = 'gyro';
         gyroTargetX = Math.max(-12, Math.min(12, event.beta / 3));
         gyroTargetY = Math.max(-12, Math.min(12, event.gamma / 3));
-        
-        if (Math.abs(event.beta) > 0.1 || Math.abs(event.gamma) > 0.1) {
-            inputMode = 'gyro';
-        }
     }
 }
 
@@ -79,8 +78,8 @@ function renderLoop() {
         targetTiltX = gyroCurrentX;
         targetTiltY = gyroCurrentY;
     } else {
-        // 鼠标：相对 cardContainer 中心
-        var rect = cardContainer.getBoundingClientRect();
+        // 鼠标：相对 cardFlipContainer 中心
+        var rect = cardFlipContainer.getBoundingClientRect();
         var cx = rect.left + rect.width / 2;
         var cy = rect.top + rect.height / 2;
         
@@ -101,10 +100,9 @@ function renderLoop() {
     currentTiltX += (targetTiltX - currentTiltX) * 0.1;
     currentTiltY += (targetTiltY - currentTiltY) * 0.1;
     
-    // 写入 cardInner（持续更新）
-    cardInner.style.transform = 
-        'rotateX(' + currentTiltX + 'deg) ' +
-        'rotateY(' + currentTiltY + 'deg)';
+    // 分层写入：X轴和Y轴分离
+    cardTiltX.style.transform = 'rotateX(' + currentTiltX + 'deg)';
+    cardTiltY.style.transform = 'rotateY(' + currentTiltY + 'deg)';
     
     requestAnimationFrame(renderLoop);
 }
@@ -112,15 +110,15 @@ function renderLoop() {
 renderLoop();
 
 // ============================================
-// 4. 翻转（逆时针累加）
+// 4. 翻转（单独一层，单方向累加）
 // ============================================
-cardContainer.addEventListener('click', function() {
-    flipRotation -= 180; // 逆时针
-    cardContainer.style.transform = 'rotateY(' + flipRotation + 'deg)';
+cardFlipContainer.addEventListener('click', function() {
+    flipRotation += 180; // 单方向累加
+    cardFlipContainer.style.transform = 'rotateY(' + flipRotation + 'deg)';
 });
 
 // ============================================
-// 5. Scroll（只改 wrapper 的 opacity/scale）
+// 5. Scroll（只改 scale/opacity，不碰 rotate）
 // ============================================
 window.addEventListener('scroll', function() {
     var scrollY = window.scrollY;
@@ -128,8 +126,8 @@ window.addEventListener('scroll', function() {
     var cardOpacity = Math.max(0, 1 - scrollY / 400);
     var cardScale = Math.max(0.8, 1 - scrollY / 1000);
     
-    cardWrapper.style.opacity = cardOpacity;
-    cardWrapper.style.transform = 'scale(' + cardScale + ')';
+    cardScaleWrapper.style.opacity = cardOpacity;
+    cardScaleWrapper.style.transform = 'scale(' + cardScale + ')';
     
     var aboutScrollStart = 200;
     var aboutScrollEnd = 500;
