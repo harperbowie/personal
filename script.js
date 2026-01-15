@@ -2,10 +2,10 @@
 // 全局变量
 // =================
 let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
-let gyroTargetX = 0, gyroTargetY = 0, gyroCurrentX = 0, gyroCurrentY = 0;
-let initialBeta = 0, initialGamma = 0; // 设备初始方向
+let lastBeta = null, lastGamma = null; // 上一次采样，用于计算 delta
+let currentTiltX = 0, currentTiltY = 0;
 let inputMode = 'mouse';
-let flipAngle = 0, currentTiltX = 0, currentTiltY = 0;
+let flipAngle = 0;
 
 // DOM
 const cardFlip = document.getElementById('cardFlip');
@@ -34,73 +34,76 @@ window.addEventListener('mousemove', e => {
 });
 
 // =================
-// 陀螺仪事件
+// 陀螺仪事件（全新方式）
 // =================
 function handleOrientation(event) {
-    if (event.beta !== null && event.gamma !== null) {
-        inputMode = 'gyro';
-        // 使用初始方向做基准
-        gyroTargetX = Math.max(-24, Math.min(24, (event.beta - initialBeta) / 2));
-        gyroTargetY = Math.max(-24, Math.min(24, (event.gamma - initialGamma) / 2));
+    if (event.beta === null || event.gamma === null) return;
+
+    inputMode = 'gyro';
+
+    // 第一次初始化 lastBeta/lastGamma
+    if (lastBeta === null) {
+        lastBeta = event.beta;
+        lastGamma = event.gamma;
+        return; // 仅初始化，不立即改变 tilt
     }
+
+    // delta 计算
+    let deltaBeta = event.beta - lastBeta;
+    let deltaGamma = event.gamma - lastGamma;
+
+    // 累加 tilt
+    currentTiltX += deltaBeta * 0.7;   // 调大幅度
+    currentTiltY += deltaGamma * 0.7;
+
+    // 限制旋转角度
+    currentTiltX = Math.max(-45, Math.min(45, currentTiltX));
+    currentTiltY = Math.max(-45, Math.min(45, currentTiltY));
+
+    // 更新 last
+    lastBeta = event.beta;
+    lastGamma = event.gamma;
 }
 
+// =================
+// Safari 权限处理
+// =================
 function enableGyroscope() {
     if (typeof DeviceOrientationEvent !== 'undefined') {
         if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-            // Safari: 需要用户点击触发请求权限
             document.addEventListener('click', () => {
                 DeviceOrientationEvent.requestPermission()
                     .then(response => {
                         if (response === 'granted') {
-                            window.addEventListener('deviceorientation', onFirstOrientation, true);
-                        } else {
-                            console.error('用户拒绝陀螺仪权限');
+                            window.addEventListener('deviceorientation', handleOrientation, true);
                         }
                     }).catch(console.error);
             }, { once: true });
         } else {
-            // 非 Safari 直接绑定
-            window.addEventListener('deviceorientation', onFirstOrientation, true);
+            // 非 Safari
+            window.addEventListener('deviceorientation', handleOrientation, true);
         }
     }
 }
-
-// 第一次获取初始方向
-function onFirstOrientation(event) {
-    initialBeta = event.beta || 0;
-    initialGamma = event.gamma || 0;
-    // 后续使用 handleOrientation
-    window.removeEventListener('deviceorientation', onFirstOrientation, true);
-    window.addEventListener('deviceorientation', handleOrientation, true);
-}
-
-// 启用陀螺仪
 enableGyroscope();
 
 // =================
 // renderLoop
 // =================
 function renderLoop() {
-    let targetX = 0, targetY = 0;
-
-    if (inputMode === 'gyro') {
-        gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.1;
-        gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.1;
-        targetX = gyroCurrentX;
-        targetY = gyroCurrentY;
-    } else {
+    if (inputMode === 'mouse') {
         const rect = cardFlip.getBoundingClientRect();
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
         const dx = mouseX - cx;
         const dy = mouseY - cy;
-        targetX = (-dy / (rect.height / 2)) * 6;
-        targetY = (dx / (rect.width / 2)) * 6;
-    }
 
-    currentTiltX += (targetX - currentTiltX) * 0.1;
-    currentTiltY += (targetY - currentTiltY) * 0.1;
+        const targetX = (-dy / (rect.height / 2)) * 6;
+        const targetY = (dx / (rect.width / 2)) * 6;
+
+        currentTiltX += (targetX - currentTiltX) * 0.1;
+        currentTiltY += (targetY - currentTiltY) * 0.1;
+    }
 
     cardTilt.style.transform = `rotateX(${currentTiltX}deg) rotateY(${currentTiltY}deg)`;
     requestAnimationFrame(renderLoop);
@@ -113,8 +116,6 @@ renderLoop();
 cardFlip.addEventListener('click', () => {
     flipAngle += 180;
     cardFlip.style.transform = `rotateY(${flipAngle}deg)`;
-    currentTiltX = 0;
-    currentTiltY = 0; // 避免点击后快速闪动
 });
 
 // =================
@@ -122,8 +123,8 @@ cardFlip.addEventListener('click', () => {
 // =================
 window.addEventListener('scroll', () => {
     const scrollY = window.scrollY;
-    let cardOpacity = Math.max(0, 1 - scrollY / 400);
-    let cardScale = Math.max(0.8, 1 - scrollY / 1000);
+    const cardOpacity = Math.max(0, 1 - scrollY / 400);
+    const cardScale = Math.max(0.8, 1 - scrollY / 1000);
     cardScaleWrapper.style.opacity = cardOpacity;
     cardScaleWrapper.style.transform = `scale(${cardScale})`;
 
@@ -143,37 +144,36 @@ window.addEventListener('scroll', () => {
 // Easter Egg
 // =================
 function createFirework() {
-    let x = Math.random() * window.innerWidth;
-    let y = Math.random() * window.innerHeight * 0.7 + 100;
-    let hue = Math.random() * 360;
+    const x = Math.random() * window.innerWidth;
+    const y = Math.random() * window.innerHeight * 0.7 + 100;
+    const hue = Math.random() * 360;
     for (let i = 0; i < 40; i++) {
-        let particle = document.createElement('div');
-        particle.className = 'firework-particle';
-        particle.style.left = x + 'px';
-        particle.style.top = y + 'px';
-        let angle = (Math.PI * 2 * i) / 40;
-        let velocity = 1.5 + Math.random() * 1.5;
-        let distance = velocity * 150;
-        let tx = Math.cos(angle) * distance;
-        let ty = Math.sin(angle) * distance;
-        particle.style.backgroundColor = `hsl(${hue},100%,60%)`;
-        particle.style.boxShadow = `0 0 15px hsl(${hue},100%,60%)`;
-        fireworksContainer.appendChild(particle);
+        const p = document.createElement('div');
+        p.className = 'firework-particle';
+        p.style.left = x + 'px';
+        p.style.top = y + 'px';
+        const angle = (Math.PI * 2 * i) / 40;
+        const velocity = 1.5 + Math.random() * 1.5;
+        const distance = velocity * 150;
+        const tx = Math.cos(angle) * distance;
+        const ty = Math.sin(angle) * distance;
+        p.style.backgroundColor = `hsl(${hue},100%,60%)`;
+        p.style.boxShadow = `0 0 15px hsl(${hue},100%,60%)`;
+        fireworksContainer.appendChild(p);
 
-        (function (p, targetX, targetY) {
+        (function(p, tx, ty) {
             let start = null;
-            function animate(timestamp) {
-                if (!start) start = timestamp;
-                let progress = (timestamp - start) / 1500;
+            function animate(ts) {
+                if (!start) start = ts;
+                const progress = (ts - start) / 1500;
                 if (progress < 1) {
-                    let cx = targetX * progress, cy = targetY * progress, scale = 1 - progress, opacity = 1 - progress;
-                    p.style.transform = `translate(${cx}px,${cy}px) scale(${scale})`;
-                    p.style.opacity = opacity;
+                    p.style.transform = `translate(${tx * progress}px,${ty * progress}px) scale(${1 - progress})`;
+                    p.style.opacity = 1 - progress;
                     requestAnimationFrame(animate);
                 } else p.remove();
             }
             requestAnimationFrame(animate);
-        })(particle, tx, ty);
+        })(p, tx, ty);
     }
 }
 
@@ -182,8 +182,8 @@ function launchFireworks() {
 }
 
 function handleEasterEgg() {
-    const value = secretInput.value.toLowerCase().trim();
-    if (value === 'sherman') {
+    const val = secretInput.value.toLowerCase().trim();
+    if (val === 'sherman') {
         secretInput.value = '';
         heartContainer.classList.add('show');
         launchFireworks();
