@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Harper</title>
+<title>Card</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
 
@@ -15,26 +15,19 @@
 
 html, body {
   margin: 0;
-  padding: 0;
+  height: 100%;
   background: #fff;
-  font-family: 'Playfair Display', serif;
+  overflow-x: hidden;
 }
 
-/* ===== 页面结构 ===== */
-section {
-  min-height: 100vh;
+body {
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
 }
 
-.hero {
-  position: relative;
-}
-
-/* ===== 名片 ===== */
 .scene {
-  perspective: 1600px;
+  perspective: 1400px;
 }
 
 .card-wrapper {
@@ -42,21 +35,13 @@ section {
   aspect-ratio: 3 / 2;
 }
 
-.card-rotator {
+.card {
   width: 100%;
   height: 100%;
+  position: relative;
   transform-style: preserve-3d;
-  transition: transform 0.9s cubic-bezier(.2,.8,.2,1);
-}
-
-.card-rotator.flipped {
-  transform: rotateY(-180deg);
-}
-
-.card-tilt {
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
+  transition: transform 0.8s cubic-bezier(.2,.8,.2,1);
+  cursor: pointer;
 }
 
 .card-face {
@@ -67,113 +52,123 @@ section {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 28px 70px rgba(0,0,0,.14);
+  font-family: 'Playfair Display', serif;
+  box-shadow: 0 25px 60px rgba(0,0,0,.12);
 }
 
 .front {
-  background: #fff;
+  background: #ffffff;
 }
 
 .back {
-  background: #fff;
+  background: #ffffff;
   transform: rotateY(-180deg);
   flex-direction: column;
+  gap: 12px;
 }
 
-h1 {
+.card.flipped {
+  transform: rotateY(-180deg);
+}
+
+h1, p {
   margin: 0;
-  font-size: 28px;
+  color: #000;
 }
 
-.back p {
-  margin-top: 10px;
+p {
   font-size: 14px;
   opacity: .6;
-}
-
-/* ===== About ===== */
-.about {
-  flex-direction: column;
-  gap: 12px;
-  opacity: 0;
-  transform: translateY(40px);
-  transition: all .6s ease;
-}
-
-.about.show {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* ===== Secret ===== */
-.secret {
-  flex-direction: column;
-  gap: 12px;
 }
 </style>
 </head>
 
 <body>
 
-<section class="hero">
-  <div class="scene">
-    <div class="card-wrapper">
-      <div class="card-rotator" id="rotator">
-        <div class="card-tilt" id="tilt">
-          <div class="card-face front">
-            <h1>Harper Bowie</h1>
-          </div>
-          <div class="card-face back">
-            <h1>Curious about what's next</h1>
-            <p>Learn by doing</p>
-          </div>
-        </div>
+<div class="scene">
+  <div class="card-wrapper">
+    <div class="card" id="card">
+      <div class="card-face front">
+        <h1>Harper Bowie</h1>
+      </div>
+      <div class="card-face back">
+        <h1>Curious about what's next</h1>
+        <p>Learn by doing</p>
       </div>
     </div>
   </div>
-</section>
-
-<section class="about" id="about">
-  <h1>About</h1>
-  <p>Observer. Builder. Learner.</p>
-</section>
-
-<section class="secret">
-  <p>Keep scrolling.</p>
-</section>
+</div>
 
 <script>
-const rotator = document.getElementById('rotator');
-const tilt = document.getElementById('tilt');
-const about = document.getElementById('about');
-
-let targetX = 0, targetY = 0;
-let currentX = 0, currentY = 0;
-const MAX = 22;
+const card = document.getElementById('card');
+let isFlipped = false;
+let targetX = 0;
+let targetY = 0;
+let currentX = 0;
+let currentY = 0;
 
 function animate() {
   currentX += (targetX - currentX) * 0.08;
   currentY += (targetY - currentY) * 0.08;
-  tilt.style.transform = `rotateX(${currentY}deg) rotateY(${currentX}deg)`;
+
+  card.style.transform =
+    `rotateY(${isFlipped ? -180 : 0}deg)
+     rotateX(${currentY}deg)
+     rotateY(${currentX}deg)`;
+
   requestAnimationFrame(animate);
 }
 animate();
 
+/* 鼠标 */
 window.addEventListener('mousemove', e => {
-  targetX = (e.clientX / innerWidth - .5) * MAX * 2;
-  targetY = (.5 - e.clientY / innerHeight) * MAX * 2;
+  const x = (e.clientX / window.innerWidth - 0.5) * 12;
+  const y = (0.5 - e.clientY / window.innerHeight) * 12;
+  targetX = x;
+  targetY = y;
 });
 
-rotator.addEventListener('click', () => {
-  rotator.classList.toggle('flipped');
+window.addEventListener('mouseleave', () => {
+  targetX = 0;
+  targetY = 0;
 });
 
-/* scroll reveal */
-window.addEventListener('scroll', () => {
-  if (scrollY > innerHeight * 0.5) {
-    about.classList.add('show');
+/* 点击翻转（统一逆时针） */
+card.addEventListener('click', async () => {
+  isFlipped = !isFlipped;
+
+  // iOS 陀螺仪权限
+  if (
+    typeof DeviceOrientationEvent !== 'undefined' &&
+    typeof DeviceOrientationEvent.requestPermission === 'function'
+  ) {
+    try {
+      await DeviceOrientationEvent.requestPermission();
+    } catch {}
   }
 });
+
+/* 陀螺仪 */
+window.addEventListener('deviceorientation', e => {
+  if (e.beta === null) return;
+
+  const x = Math.max(-15, Math.min(15, e.gamma / 2));
+  const y = Math.max(-15, Math.min(15, e.beta / 3));
+  targetX = x;
+  targetY = -y;
+});
+
+/* 滚动弹入 */
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      card.style.opacity = 1;
+      card.style.transform += ' scale(1)';
+    }
+  });
+}, { threshold: 0.5 });
+
+observer.observe(card);
 </script>
 
 </body>
