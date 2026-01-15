@@ -90,16 +90,20 @@ function renderLoop() {
         const cx = rect.left + rect.width/2;
         const cy = rect.top + rect.height/2;
 
-        let px = (mouseX - cx) / (rect.width / 2);  // 左-1 右+1
-        let py = (mouseY - cy) / (rect.height / 2); // 上-1 下+1
+        // 计算鼠标相对于卡片中心的标准化位置
+        // 范围：left(-1) ~ right(+1), top(-1) ~ bottom(+1)
+        let px = (mouseX - cx) / (rect.width / 2);
+        let py = (mouseY - cy) / (rect.height / 2);
 
         px = Math.max(-1, Math.min(1, px));
         py = Math.max(-1, Math.min(1, py));
 
         const maxAngle = 10; // 最大倾斜角
-        // ✅ 正确 tilt 公式：鼠标所在角就是抬起角
-        targetX = py * maxAngle;   // 鼠标下 → X 轴向下翻，鼠标上 → 向上翻
-        targetY = -px * maxAngle;  // 鼠标右 → Y 轴向左翻，鼠标左 → 向右翻
+        
+        // ✅ 关键修改：鼠标在哪个角，就抬起哪个角
+        // 鼠标在右上角(px=+, py=-)时：X轴向上(-)，Y轴向右(+)
+        targetX = -py * maxAngle;   // 上负下正
+        targetY = px * maxAngle;    // 左负右正
     }
 
     currentTiltX += (targetX - currentTiltX) * 0.1;
