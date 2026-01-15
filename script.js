@@ -85,13 +85,11 @@ function renderLoop(){
     let targetX = 0, targetY = 0;
 
     if(inputMode === 'gyro'){
-        // 保持原陀螺仪逻辑
         gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.1;
         gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.1;
         targetX = gyroCurrentX;
         targetY = gyroCurrentY;
     } else {
-        // 鼠标位置相对卡片中心
         const rect = cardFlip.getBoundingClientRect();
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
@@ -99,23 +97,22 @@ function renderLoop(){
         const dx = mouseX - cx; // 左负右正
         const dy = mouseY - cy; // 上负下正
 
-        // 关键公式，保证四个角抬起方向正确
-        const maxAngle = 10; // 最大倾斜角度，可调
-        targetX = -(dy / (rect.height / 2)) * maxAngle; // 上抬为正
-        targetY = (dx / (rect.width / 2)) * maxAngle;   // 右抬为正
+        // ✅ 核心修正：
+        // rotateX 正值下抬，所以 dy 不加负号，让上抬为正
+        targetX = (dy / (rect.height / 2)) * 10; // 上抬为正
+        targetY = (dx / (rect.width / 2)) * 10;  // 右抬为正
     }
 
-    // 平滑过渡
+    // 平滑动画
     currentTiltX += (targetX - currentTiltX) * 0.15;
     currentTiltY += (targetY - currentTiltY) * 0.15;
 
-    // 应用
     cardTilt.style.transform = `rotateX(${currentTiltX}deg) rotateY(${currentTiltY}deg)`;
-
     requestAnimationFrame(renderLoop);
 }
 
 renderLoop();
+
 
 
 // =================
