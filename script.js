@@ -3,7 +3,7 @@
 // =================
 var mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
 var gyroTargetX = 0, gyroTargetY = 0, gyroCurrentX = 0, gyroCurrentY = 0;
-var initialGyroX = 0, initialGyroY = 0; // 初始方向
+var initialGyroX = null, initialGyroY = null; // 初始方向，刷新后立即获取
 var inputMode = 'mouse';
 var flipAngle = 0, currentTiltX = 0, currentTiltY = 0;
 
@@ -19,12 +19,12 @@ var heartContainer = document.getElementById('heartContainer');
 var fireworksContainer = document.getElementById('fireworksContainer');
 
 // =================
-// 判断浏览器是否为Safari
+// 判断是否Safari
 // =================
 var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
 // =================
-// 鼠标 & 陀螺仪
+// 鼠标事件
 // =================
 window.addEventListener('mousemove', e => {
     if (inputMode === 'mouse') {
@@ -34,56 +34,53 @@ window.addEventListener('mousemove', e => {
 });
 
 // =================
-// 陀螺仪事件处理
+// 陀螺仪事件
 // =================
 function handleOrientation(event) {
-    if (event.beta !== null && event.gamma !== null) {
-        inputMode = 'gyro';
-        // 初始方向只获取一次
-        if (initialGyroX === null || initialGyroY === null || initialGyroX === 0 && initialGyroY === 0) {
-            initialGyroX = event.beta;
-            initialGyroY = event.gamma;
-        }
-        // 相对于初始方向
-        gyroTargetX = Math.max(-24, Math.min(24, (event.beta - initialGyroX) / 2));
-        gyroTargetY = Math.max(-24, Math.min(24, (event.gamma - initialGyroY) / 2));
+    if (event.beta === null || event.gamma === null) return;
+
+    inputMode = 'gyro';
+
+    // 首次获取初始方向
+    if (initialGyroX === null || initialGyroY === null) {
+        initialGyroX = event.beta;
+        initialGyroY = event.gamma;
+        console.log('📱 初始陀螺仪方向:', initialGyroX.toFixed(1), initialGyroY.toFixed(1));
     }
+
+    // 相对于初始方向的偏移
+    gyroTargetX = Math.max(-24, Math.min(24, (event.beta - initialGyroX) / 2));
+    gyroTargetY = Math.max(-24, Math.min(24, (event.gamma - initialGyroY) / 2));
 }
 
 // =================
 // 启用陀螺仪
 // =================
 function enableGyroscope() {
-    if (isSafari) {
-        // Safari 需要点击后请求权限
-        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-            document.addEventListener('click', function () {
-                DeviceOrientationEvent.requestPermission()
-                    .then(response => {
-                        if (response === 'granted') {
-                            window.addEventListener('deviceorientation', handleOrientation, true);
-                            console.log('✅ 陀螺仪已启用');
-                        } else {
-                            console.error('❌ 用户拒绝陀螺仪权限');
-                        }
-                    })
-                    .catch(console.error);
-            }, { once: true });
-        }
+    if (isSafari && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        document.addEventListener('click', function () {
+            DeviceOrientationEvent.requestPermission()
+                .then(response => {
+                    if (response === 'granted') {
+                        window.addEventListener('deviceorientation', handleOrientation, true);
+                        console.log('✅ Safari 陀螺仪启用');
+                    }
+                })
+                .catch(console.error);
+        }, { once: true });
     } else {
-        // 非 Safari 浏览器直接绑定
+        // 非Safari直接绑定
         window.addEventListener('deviceorientation', handleOrientation, true);
     }
 }
-
-// 页面加载后启用
 enableGyroscope();
 
 // =================
-// renderLoop
+// 渲染循环
 // =================
 function renderLoop() {
     let targetX = 0, targetY = 0;
+
     if (inputMode === 'gyro') {
         gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.1;
         gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.1;
@@ -103,6 +100,7 @@ function renderLoop() {
     currentTiltY += (targetY - currentTiltY) * 0.1;
 
     cardTilt.style.transform = `rotateX(${currentTiltX}deg) rotateY(${currentTiltY}deg)`;
+
     requestAnimationFrame(renderLoop);
 }
 renderLoop();
@@ -118,7 +116,7 @@ cardFlip.addEventListener('click', () => {
 });
 
 // =================
-// Scroll
+// Scroll效果
 // =================
 window.addEventListener('scroll', () => {
     const scrollY = window.scrollY;
@@ -129,7 +127,7 @@ window.addEventListener('scroll', () => {
 
     const aboutScrollStart = 200, aboutScrollEnd = 500, aboutFadeOut = 1200;
     const aboutOpacity = scrollY < aboutFadeOut ? Math.min(1, Math.max(0, (scrollY - aboutScrollStart) / (aboutScrollEnd - aboutScrollStart))) : Math.max(0, 1 - (scrollY - aboutFadeOut) / 300);
-    const aboutTranslateY = scrollY < aboutFadeOut ? Math.max(0, 50 - (scrollY - aboutScrollStart) / 8) : Math.max(0, -30 + (scrollY - aboutScrollOut) / 10);
+    const aboutTranslateY = scrollY < aboutFadeOut ? Math.max(0, 50 - (scrollY - aboutScrollStart) / 8) : Math.max(0, -30 + (scrollY - aboutFadeOut) / 10);
     aboutSection.style.opacity = aboutOpacity;
     aboutSection.style.transform = `translateY(${aboutTranslateY}px)`;
 
@@ -146,6 +144,7 @@ function createFirework() {
     let x = Math.random() * window.innerWidth;
     let y = Math.random() * window.innerHeight * 0.7 + 100;
     let hue = Math.random() * 360;
+
     for (let i = 0; i < 40; i++) {
         let particle = document.createElement('div');
         particle.className = 'firework-particle';
