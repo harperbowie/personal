@@ -46,16 +46,23 @@ body {
     padding: 0 20px;
 }
 
-/* 外层：翻转层 */
-.card-container {
+/* 最外层：scale + opacity */
+.card-wrapper {
     width: 380px;
     height: 240px;
+    transition: opacity 0.3s ease;
+}
+
+/* 中层：翻转层（逆时针） */
+.card-container {
+    width: 100%;
+    height: 100%;
     position: relative;
     cursor: pointer;
     perspective: 1200px;
     transform-style: preserve-3d;
     will-change: transform;
-    transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1), opacity 0.3s ease;
+    transition: transform 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
 }
 
 /* 内层：倾斜层 */
@@ -80,8 +87,13 @@ body {
     justify-content: center;
 }
 
+.card-front {
+    /* 正面：默认朝前 */
+}
+
 .card-back {
-    transform: rotateY(180deg);
+    /* 背面：逆时针 180 度 */
+    transform: rotateY(-180deg);
     flex-direction: column;
     padding: 40px;
 }
@@ -256,7 +268,7 @@ body {
 
 /* Mobile */
 @media (max-width: 768px) {
-    .card-container {
+    .card-wrapper {
         width: 90vw;
         max-width: 380px;
         height: 55vw;
