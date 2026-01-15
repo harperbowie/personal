@@ -94,8 +94,8 @@ function renderLoop(){
         const cy=rect.top+rect.height/2;
         const dx=mouseX-cx;
         const dy=mouseY-cy;
-        targetX = ((cy - mouseY) / (rect.height / 2)) * 6;
-        targetY = -((mouseX - cx) / (rect.width / 2)) * 6;
+        targetX = ((mouseY - cy) / (rect.height / 2)) * 6;
+        targetY = ((mouseX - cx) / (rect.width / 2)) * 6;
     }
 
     currentTiltX += (targetX - currentTiltX)*0.1;
