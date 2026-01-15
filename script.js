@@ -48,7 +48,6 @@ function handleOrientation(event){
 }
 
 function enableGyro(){
-    // Safari 需要请求权限
     if(typeof DeviceOrientationEvent !== 'undefined'){
         if(typeof DeviceOrientationEvent.requestPermission === 'function'){
             DeviceOrientationEvent.requestPermission()
@@ -60,18 +59,15 @@ function enableGyro(){
             })
             .catch(console.error);
         } else {
-            // 其他浏览器直接注册
             window.addEventListener('deviceorientation', handleOrientation, true);
             console.log('✅ 陀螺仪已启用（非Safari）');
         }
     }
 }
 
-// Safari: 用户首次点击屏幕触发请求权限
 window.addEventListener('touchstart', enableGyro, {once:true});
 window.addEventListener('click', enableGyro, {once:true});
 
-// 非Safari移动设备：页面加载后自动启用
 if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)){
     if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function'){
         setTimeout(enableGyro, 500);
@@ -91,22 +87,21 @@ function renderLoop() {
         targetY = gyroCurrentY;
     } else {
         const rect = cardFlip.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
+        const cx = rect.left + rect.width/2;
+        const cy = rect.top + rect.height/2;
 
         let px = (mouseX - cx) / (rect.width / 2);  // 左-1 右+1
         let py = (mouseY - cy) / (rect.height / 2); // 上-1 下+1
 
-        // 限幅
         px = Math.max(-1, Math.min(1, px));
         py = Math.max(-1, Math.min(1, py));
 
         const maxAngle = 10; // 最大倾斜角
-        targetX = -py * maxAngle; // 鼠标上抬卡片上抬
-        targetY = px * maxAngle;  // 鼠标右移卡片右抬
+        // ✅ 正确 tilt 公式：鼠标所在角就是抬起角
+        targetX = py * maxAngle;   // 鼠标下 → X 轴向下翻，鼠标上 → 向上翻
+        targetY = -px * maxAngle;  // 鼠标右 → Y 轴向左翻，鼠标左 → 向右翻
     }
 
-    // 平滑过渡
     currentTiltX += (targetX - currentTiltX) * 0.1;
     currentTiltY += (targetY - currentTiltY) * 0.1;
 
@@ -114,27 +109,20 @@ function renderLoop() {
 
     requestAnimationFrame(renderLoop);
 }
-
 renderLoop();
-
-
-
-
-
 
 // =================
 // 点击翻转
 // =================
 cardFlip.addEventListener('click', ()=>{
-    if(isFlipping) return; // 防止翻转中重复触发
+    if(isFlipping) return;
     isFlipping=true;
-    flipAngle += 180; // 单方向翻转
+    flipAngle += 180;
     cardFlip.style.transform=`rotateY(${flipAngle}deg)`;
-    currentTiltX=0; currentTiltY=0; // 翻转时 tilt 重置
-    setTimeout(()=>{ isFlipping=false; }, 800); // 与CSS transition时间一致
+    currentTiltX=0; currentTiltY=0;
+    setTimeout(()=>{ isFlipping=false; }, 800);
 });
 
-// 移动端触摸支持
 cardFlip.addEventListener('touchend', (e)=>{
     if(isFlipping) return;
     e.preventDefault();
