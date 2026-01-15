@@ -22,6 +22,9 @@ let gyroCurrentY = 0;
 let initialBeta = null;
 let initialGamma = null;
 
+// 是否已经启用陀螺仪
+let gyroEnabled = false;
+
 // ============================================
 // 2. 鼠标输入
 // ============================================
@@ -33,28 +36,32 @@ window.addEventListener('mousemove', e => {
 });
 
 // ============================================
-// 3. 陀螺仪输入（包括 Safari 授权）
+// 3. 陀螺仪输入（Safari + 其他浏览器）
 // ============================================
 function handleOrientation(event) {
+    if (!gyroEnabled) return;
     if (event.beta === null || event.gamma === null) return;
 
-    // 记录初始方向
+    // 仅首次触发时记录初始方向
     if (initialBeta === null) initialBeta = event.beta;
     if (initialGamma === null) initialGamma = event.gamma;
 
     inputMode = 'gyro';
 
-    // 计算相对偏移（以初始方向为零点）
+    // 相对初始偏移量
     let betaOffset = event.beta - initialBeta;
     let gammaOffset = event.gamma - initialGamma;
 
-    // 限幅度
+    // 限幅度 ±24
     gyroTargetX = Math.max(-24, Math.min(24, betaOffset));
     gyroTargetY = Math.max(-24, Math.min(24, gammaOffset));
 }
 
-// iOS Safari 需要用户触发授权
+// iOS Safari 授权
 function enableGyro() {
+    if (gyroEnabled) return; // 已启用就不重复
+    gyroEnabled = true;
+
     if (typeof DeviceOrientationEvent !== 'undefined') {
         if (typeof DeviceOrientationEvent.requestPermission === 'function') {
             // Safari
@@ -62,7 +69,7 @@ function enableGyro() {
                 .then(response => {
                     if (response === 'granted') {
                         window.addEventListener('deviceorientation', handleOrientation, true);
-                        console.log('✅ 陀螺仪已启用');
+                        console.log('✅ 陀螺仪已启用（Safari）');
                     }
                 })
                 .catch(console.error);
@@ -74,19 +81,19 @@ function enableGyro() {
     }
 }
 
-// 用户第一次点击或触摸时触发
+// 页面首次触摸/点击就激活陀螺仪
 window.addEventListener('touchstart', enableGyro, { once: true });
 window.addEventListener('click', enableGyro, { once: true });
 
 // ============================================
-// 4. rAF 循环：应用倾斜
+// 4. rAF 循环
 // ============================================
 function renderLoop() {
     let targetTiltX = 0;
     let targetTiltY = 0;
 
     if (inputMode === 'gyro') {
-        // 陀螺仪：低通滤波
+        // 陀螺仪低通滤波
         gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.1;
         gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.1;
 
@@ -114,7 +121,6 @@ function renderLoop() {
     currentTiltX += (targetTiltX - currentTiltX) * 0.1;
     currentTiltY += (targetTiltY - currentTiltY) * 0.1;
 
-    // 写入 transform
     cardTilt.style.transform = `rotateX(${currentTiltX}deg) rotateY(${currentTiltY}deg)`;
 
     requestAnimationFrame(renderLoop);
@@ -122,7 +128,7 @@ function renderLoop() {
 renderLoop();
 
 // ============================================
-// 5. 点击翻转
+// 5. 点击翻转（不会影响陀螺仪初始方向）
 // ============================================
 cardFlip.addEventListener('click', () => {
     flipRotation += 180;
