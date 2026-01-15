@@ -3,6 +3,7 @@ var rotation = 0;
 var isRotating = false;
 var isHovering = false;
 var tilt = { x: 0, y: 0 };
+var targetTilt = { x: 0, y: 0 };
 var mousePos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 var deviceTilt = { x: 0, y: 0 };
 var hasGyroscope = false;
@@ -52,43 +53,54 @@ function handleScroll() {
 
 window.addEventListener('scroll', handleScroll);
 
-// Mouse movement
+// Mouse movement - 实时更新
 window.addEventListener('mousemove', function(e) {
     mousePos = { x: e.clientX, y: e.clientY };
 });
 
-// Device orientation - 检测陀螺仪
-if (window.DeviceOrientationEvent) {
-    // 请求权限（iOS 13+需要）
-    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission()
-            .then(function(permissionState) {
-                if (permissionState === 'granted') {
-                    hasGyroscope = true;
-                    window.addEventListener('deviceorientation', handleOrientation);
-                }
-            })
-            .catch(console.error);
-    } else {
-        // 非iOS设备直接启用
-        hasGyroscope = true;
-        window.addEventListener('deviceorientation', handleOrientation);
-    }
-}
-
+// Device orientation - iOS陀螺仪
 function handleOrientation(e) {
     if (e.beta !== null && e.gamma !== null) {
         hasGyroscope = true;
-        var beta = e.beta || 0;
-        var gamma = e.gamma || 0;
+        var beta = e.beta;
+        var gamma = e.gamma;
+        
+        // 增强陀螺仪效果
         deviceTilt = { 
-            x: Math.max(-15, Math.min(15, beta / 2)),
-            y: Math.max(-15, Math.min(15, gamma / 2))
+            x: Math.max(-25, Math.min(25, beta / 1.5)),
+            y: Math.max(-25, Math.min(25, gamma / 1.5))
         };
     }
 }
 
-// 计算鼠标距离名片的距离和角度
+// 请求iOS陀螺仪权限
+function requestGyroPermission() {
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission()
+            .then(function(response) {
+                if (response === 'granted') {
+                    window.addEventListener('deviceorientation', handleOrientation);
+                    hasGyroscope = true;
+                    console.log('陀螺仪已启用');
+                }
+            })
+            .catch(function(error) {
+                console.log('陀螺仪权限被拒绝:', error);
+            });
+    } else if (window.DeviceOrientationEvent) {
+        // 非iOS设备直接启用
+        window.addEventListener('deviceorientation', handleOrientation);
+    }
+}
+
+// iOS需要用户交互才能请求权限
+if (isMobile) {
+    document.body.addEventListener('touchstart', function() {
+        requestGyroPermission();
+    }, { once: true });
+}
+
+// 计算鼠标距离名片的影响
 function getMouseInfluence() {
     var rect = cardContainer.getBoundingClientRect();
     var cardCenterX = rect.left + rect.width / 2;
@@ -98,63 +110,74 @@ function getMouseInfluence() {
     var deltaY = mousePos.y - cardCenterY;
     var distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
     
-    // 最大影响距离（像素）
-    var maxDistance = 500;
-    // 距离越近影响越大，使用平滑曲线
+    // 扩大影响距离到1000像素
+    var maxDistance = 1000;
     var influence = Math.max(0, 1 - (distance / maxDistance));
-    influence = influence * influence; // 平方使衰减更平滑
+    
+    // 距离名片的实际像素距离
+    var cardDistance = Math.max(0, distance - (rect.width / 2));
     
     return {
         x: deltaX,
         y: deltaY,
         influence: influence,
-        distance: distance
+        distance: distance,
+        cardDistance: cardDistance
     };
 }
 
-// 主动画循环
+// 主动画循环 - 实时计算和更新
 function animate() {
     if (!isRotating) {
-        var tiltX = 0;
-        var tiltY = 0;
+        var finalTiltX = 0;
+        var finalTiltY = 0;
         
-        // 如果有陀螺仪且检测到数据，优先使用陀螺仪
-        if (hasGyroscope && (deviceTilt.x !== 0 || deviceTilt.y !== 0)) {
-            tiltX = deviceTilt.x;
-            tiltY = deviceTilt.y;
+        // 如果有陀螺仪数据，优先使用
+        if (hasGyroscope && isMobile && (Math.abs(deviceTilt.x) > 0.5 || Math.abs(deviceTilt.y) > 0.5)) {
+            // 陀螺仪模式
+            finalTiltX = deviceTilt.x;
+            finalTiltY = deviceTilt.y;
         } else {
-            // 否则使用鼠标位置
+            // 鼠标模式
+            var mouseInfluence = getMouseInfluence();
+            
             if (isHovering) {
-                // 悬停时：使用悬停位置的倾斜
-                tiltX = tilt.x;
-                tiltY = tilt.y;
+                // 在名片上：最大15度
+                var rect = cardContainer.getBoundingClientRect();
+                var relativeX = mousePos.x - rect.left;
+                var relativeY = mousePos.y - rect.top;
+                var centerX = rect.width / 2;
+                var centerY = rect.height / 2;
+                
+                finalTiltX = -((relativeY - centerY) / centerY) * 15;
+                finalTiltY = ((relativeX - centerX) / centerX) * 15;
             } else {
-                // 非悬停时：根据鼠标距离计算影响
-                var mouseInfluence = getMouseInfluence();
+                // 不在名片上：根据距离计算
+                // 基础角度：远处10度
+                var baseTilt = 10;
                 
-                // 基础倾斜角度（最大6度）
-                var baseMaxTilt = 6;
+                // 距离衰减，但保持明显
+                var distanceFactor = Math.pow(mouseInfluence.influence, 0.5); // 平方根衰减，更缓和
                 
-                // 计算目标倾斜角度
-                var targetTiltX = -(mouseInfluence.y / 200) * baseMaxTilt * mouseInfluence.influence;
-                var targetTiltY = (mouseInfluence.x / 200) * baseMaxTilt * mouseInfluence.influence;
-                
-                // 平滑过渡
-                tilt.x += (targetTiltX - tilt.x) * 0.1;
-                tilt.y += (targetTiltY - tilt.y) * 0.1;
-                
-                tiltX = tilt.x;
-                tiltY = tilt.y;
+                finalTiltX = -(mouseInfluence.y / 300) * baseTilt * (0.3 + distanceFactor * 0.7);
+                finalTiltY = (mouseInfluence.x / 300) * baseTilt * (0.3 + distanceFactor * 0.7);
             }
         }
         
-        cardInner.style.transform = 'rotateX(' + tiltX + 'deg) rotateY(' + (tiltY + rotation) + 'deg)';
+        // 实时更新，快速响应
+        var smoothness = isHovering ? 0.3 : 0.15;
+        tilt.x += (finalTiltX - tilt.x) * smoothness;
+        tilt.y += (finalTiltY - tilt.y) * smoothness;
+        
+        // 立即应用
+        cardInner.style.transform = 'rotateX(' + tilt.x + 'deg) rotateY(' + (tilt.y + rotation) + 'deg)';
     }
+    
     animationFrameId = requestAnimationFrame(animate);
 }
 animate();
 
-// Card hover - 立即响应
+// Card hover
 cardContainer.addEventListener('mouseenter', function() {
     isHovering = true;
 });
@@ -162,25 +185,14 @@ cardContainer.addEventListener('mouseenter', function() {
 cardContainer.addEventListener('mousemove', function(e) {
     if (isRotating) return;
     
+    // 更新鼠标位置，动画循环会自动处理
     var rect = cardContainer.getBoundingClientRect();
-    var x = e.clientX - rect.left;
-    var y = e.clientY - rect.top;
-    var centerX = rect.width / 2;
-    var centerY = rect.height / 2;
-    
-    // 悬停时最大15度倾斜
-    var maxTilt = 15;
-    var tiltX = ((y - centerY) / centerY) * -maxTilt;
-    var tiltY = ((x - centerX) / centerX) * maxTilt;
-    
-    // 立即更新，无过渡
-    tilt.x = tiltX;
-    tilt.y = tiltY;
+    mousePos.x = e.clientX;
+    mousePos.y = e.clientY;
 });
 
 cardContainer.addEventListener('mouseleave', function() {
     isHovering = false;
-    // 离开后恢复到全局跟随模式
 });
 
 // Card click
@@ -188,9 +200,7 @@ cardContainer.addEventListener('click', function() {
     isRotating = true;
     rotation += 180;
     
-    var currentTiltX = tilt.x;
-    var currentTiltY = tilt.y;
-    cardInner.style.transform = 'rotateX(' + currentTiltX + 'deg) rotateY(' + (currentTiltY + rotation) + 'deg)';
+    cardInner.style.transform = 'rotateX(' + tilt.x + 'deg) rotateY(' + (tilt.y + rotation) + 'deg)';
     
     setTimeout(function() {
         isRotating = false;
@@ -280,18 +290,7 @@ secretInput.addEventListener('keypress', function(e) {
     }
 });
 
-// 移动端触摸时请求陀螺仪权限
+// 显示陀螺仪状态（调试用）
 if (isMobile) {
-    document.addEventListener('touchstart', function requestGyro() {
-        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-            DeviceOrientationEvent.requestPermission()
-                .then(function(permissionState) {
-                    if (permissionState === 'granted') {
-                        hasGyroscope = true;
-                    }
-                })
-                .catch(console.error);
-        }
-        document.removeEventListener('touchstart', requestGyro);
-    }, { once: true });
+    console.log('移动设备检测到，等待触摸以启用陀螺仪...');
 }
