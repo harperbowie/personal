@@ -2,11 +2,8 @@
 // 输入数据
 // ======================
 var mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
-var gyroTargetX = 0, gyroTargetY = 0;
-var gyroCurrentX = 0, gyroCurrentY = 0;
-var initialGyroX = null, initialGyroY = null; // 初始方向（零点）
-var inputMode = 'mouse';
-var flipAngle = 0, currentTiltX = 0, currentTiltY = 0;
+var currentTiltX = 0, currentTiltY = 0;
+var flipAngle = 0;
 
 // DOM
 var cardFlip = document.getElementById('cardFlip');
@@ -20,60 +17,62 @@ var heartContainer = document.getElementById('heartContainer');
 var fireworksContainer = document.getElementById('fireworksContainer');
 
 // ======================
-// 判断是否 Safari
-// ======================
-var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
-// ======================
 // 鼠标输入
 // ======================
 window.addEventListener('mousemove', e => {
-    if (inputMode === 'mouse') {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-    }
+    mouseX = e.clientX;
+    mouseY = e.clientY;
 });
 
 // ======================
-// 陀螺仪输入（第一次事件锁定零点）
+// 陀螺仪全新逻辑
 // ======================
-var gyroReady = false; // 是否已经锁定零点
+var gyroZeroX = null, gyroZeroY = null; // 零点
+var gyroOffsetX = 0, gyroOffsetY = 0;
+var gyroSmoothedX = 0, gyroSmoothedY = 0;
+var gyroActive = false; // 是否开始响应陀螺仪
 
-function handleOrientation(event) {
+function handleGyroEvent(event) {
     if (event.beta === null || event.gamma === null) return;
 
-    inputMode = 'gyro';
-
     // 第一次事件锁定零点
-    if (!gyroReady) {
-        initialGyroX = event.beta;
-        initialGyroY = event.gamma;
-        gyroReady = true;
-        console.log('📱 零点锁定：', initialGyroX.toFixed(1), initialGyroY.toFixed(1));
+    if (!gyroActive) {
+        gyroZeroX = event.beta;
+        gyroZeroY = event.gamma;
+        gyroActive = true;
+        console.log('📱 陀螺仪零点锁定：', gyroZeroX.toFixed(1), gyroZeroY.toFixed(1));
+        return; // 第一帧不更新旋转，保持名片静止
     }
 
-    // 计算偏移
-    gyroTargetX = Math.max(-30, Math.min(30, (event.beta - initialGyroX) * 0.8));
-    gyroTargetY = Math.max(-30, Math.min(30, (event.gamma - initialGyroY) * 0.8));
+    // 偏移 = 当前姿态 - 零点
+    gyroOffsetX = event.beta - gyroZeroX;
+    gyroOffsetY = event.gamma - gyroZeroY;
+
+    // 限制幅度
+    gyroOffsetX = Math.max(-30, Math.min(30, gyroOffsetX * 0.8));
+    gyroOffsetY = Math.max(-30, Math.min(30, gyroOffsetY * 0.8));
 }
 
 // ======================
 // 启用陀螺仪
 // ======================
 function enableGyroscope() {
-    if (isSafari && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    // 安卓/桌面/Safari通用逻辑
+    if (/^((?!chrome|android).)*safari/i.test(navigator.userAgent) &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+        // iOS Safari 需要点击请求权限
         document.addEventListener('click', function () {
             DeviceOrientationEvent.requestPermission()
                 .then(response => {
                     if (response === 'granted') {
-                        window.addEventListener('deviceorientation', handleOrientation, true);
+                        window.addEventListener('deviceorientation', handleGyroEvent, true);
                         console.log('✅ Safari 陀螺仪启用');
                     }
                 })
                 .catch(console.error);
         }, { once: true });
     } else {
-        window.addEventListener('deviceorientation', handleOrientation, true);
+        window.addEventListener('deviceorientation', handleGyroEvent, true);
     }
 }
 enableGyroscope();
@@ -84,14 +83,15 @@ enableGyroscope();
 function renderLoop() {
     let targetX = 0, targetY = 0;
 
-    if (inputMode === 'gyro' && gyroReady) {
-        // 陀螺仪低通滤波
-        gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.1;
-        gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.1;
-        targetX = gyroCurrentX;
-        targetY = gyroCurrentY;
+    if (gyroActive) {
+        // 低通滤波平滑
+        gyroSmoothedX += (gyroOffsetX - gyroSmoothedX) * 0.1;
+        gyroSmoothedY += (gyroOffsetY - gyroSmoothedY) * 0.1;
+
+        targetX = gyroSmoothedX;
+        targetY = gyroSmoothedY;
     } else {
-        // 鼠标控制或未锁定零点前
+        // 未激活陀螺仪前用鼠标控制
         const rect = cardFlip.getBoundingClientRect();
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
