@@ -13,17 +13,23 @@
 
         <!-- Hero Section -->
         <div class="hero-section">
-            <!-- 外层：只负责翻转 -->
-            <div class="card-wrapper" id="cardWrapper">
-                <div class="card-container" id="cardContainer">
-                    <!-- 内层：只负责 tilt -->
-                    <div class="card-inner" id="cardInner">
-                        <div class="card-face card-front">
-                            <h1 class="card-title">Harper Bowie</h1>
-                        </div>
-                        <div class="card-face card-back">
-                            <div class="card-tagline">Curious about what's next.</div>
-                            <div class="card-subtitle">Learning by doing.</div>
+            <!-- 第1层：scale + opacity（不影响 3D）-->
+            <div class="card-scale-wrapper" id="cardScaleWrapper">
+                <!-- 第2层：Y轴翻转（flip）-->
+                <div class="card-flip-container" id="cardFlipContainer">
+                    <!-- 第3层：Y轴倾斜（tilt Y）-->
+                    <div class="card-tilt-y" id="cardTiltY">
+                        <!-- 第4层：X轴倾斜（tilt X）-->
+                        <div class="card-tilt-x" id="cardTiltX">
+                            <!-- 正面 -->
+                            <div class="card-face card-front">
+                                <h1 class="card-title">Harper Bowie</h1>
+                            </div>
+                            <!-- 背面 -->
+                            <div class="card-face card-back">
+                                <div class="card-tagline">Curious about what's next.</div>
+                                <div class="card-subtitle">Learning by doing.</div>
+                            </div>
                         </div>
                     </div>
                 </div>
