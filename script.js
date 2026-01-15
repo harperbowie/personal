@@ -95,11 +95,11 @@ function renderLoop(){
         const dx=mouseX-cx;
         const dy=mouseY-cy;
         // 修复方向：X轴倾斜根据Y偏移，Y轴倾斜根据X偏移
-        targetX=(dy/(rect.height/2))*6;  // 鼠标上移(dy<0)→卡片向上倾斜(+)
+        targetX=-(dy/(rect.height/2))*6;  // 鼠标上移(dy<0)→卡片向上倾斜(+)
         targetY=(dx/(rect.width/2))*6;   // 鼠标右移(dx>0)→卡片向右倾斜(+)
     }
 
-    currentTiltX += -(targetX - currentTiltX)*0.1;
+    currentTiltX += (targetX - currentTiltX)*0.1;
     currentTiltY += (targetY - currentTiltY)*0.1;
 
     cardTilt.style.transform=`rotateX(${currentTiltX}deg) rotateY(${currentTiltY}deg)`;
