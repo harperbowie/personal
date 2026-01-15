@@ -84,9 +84,6 @@ if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigat
 function renderLoop() {
     let targetX = 0, targetY = 0;
 
-    // =================
-    // 陀螺仪
-    // =================
     if (inputMode === 'gyro') {
         gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.1;
         gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.1;
@@ -97,7 +94,6 @@ function renderLoop() {
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
 
-        // 鼠标相对于卡片中心百分比
         let px = (mouseX - cx) / (rect.width / 2);  // 左-1 右+1
         let py = (mouseY - cy) / (rect.height / 2); // 上-1 下+1
 
@@ -105,30 +101,14 @@ function renderLoop() {
         px = Math.max(-1, Math.min(1, px));
         py = Math.max(-1, Math.min(1, py));
 
-        // =================
-        // 关键：考虑 flip 角度
-        // =================
-        // 获取 flip 当前角度 (degree)
-        const style = window.getComputedStyle(cardFlip);
-        const matrix = new WebKitCSSMatrix(style.transform || style.webkitTransform || style.mozTransform || style.msTransform);
-        let flipYDeg = 0;
-        // 简单解析 rotateY 角度
-        if(matrix.m11 !== undefined) {
-            // m11 = cosθ, m13 = sinθ → θ = atan2(m13, m11)
-            flipYDeg = Math.atan2(matrix.m13, matrix.m11) * (180/Math.PI);
-        }
-
-        // flipY 180° 时，X 轴镜像，需要反向 tilt
-        const flipAdjusted = Math.abs(Math.round(flipYDeg / 180)) % 2 === 1;
-
         const maxAngle = 10; // 最大倾斜角
-        targetX = -py * maxAngle * (flipAdjusted ? -1 : 1); // 上抬为正
-        targetY = px * maxAngle; // 右抬为正，Y 轴不受 flip 镜像影响
+        targetX = -py * maxAngle; // 鼠标上抬卡片上抬
+        targetY = px * maxAngle;  // 鼠标右移卡片右抬
     }
 
     // 平滑过渡
-    currentTiltX += (targetX - currentTiltX) * 0.15;
-    currentTiltY += (targetY - currentTiltY) * 0.15;
+    currentTiltX += (targetX - currentTiltX) * 0.1;
+    currentTiltY += (targetY - currentTiltY) * 0.1;
 
     cardTilt.style.transform = `rotateX(${currentTiltX}deg) rotateY(${currentTiltY}deg)`;
 
@@ -136,6 +116,7 @@ function renderLoop() {
 }
 
 renderLoop();
+
 
 
 
