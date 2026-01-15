@@ -7,8 +7,9 @@ var inputMode = 'mouse';
 var flipAngle = 0, currentTiltX = 0, currentTiltY = 0;
 
 // DOM
-var cardFlip = document.getElementById('cardFlip');
-var cardTilt = document.getElementById('cardTilt');
+var cardFlip = document.getElementById('cardFlipContainer');
+var cardTilt = document.getElementById('cardTiltX'); // 最外层旋转X
+var cardTiltY = document.getElementById('cardTiltY'); // 最外层旋转Y
 var cardScaleWrapper = document.getElementById('cardScaleWrapper');
 var aboutSection = document.getElementById('aboutSection');
 var inputGroup = document.getElementById('inputGroup');
@@ -18,7 +19,17 @@ var heartContainer = document.getElementById('heartContainer');
 var fireworksContainer = document.getElementById('fireworksContainer');
 
 // =================
-// 判断浏览器是否为Safari
+// 防止文字和名片被选中
+// =================
+cardFlip.style.userSelect = 'none';
+cardFlip.style.webkitUserSelect = 'none';
+cardFlip.style.MozUserSelect = 'none';
+cardFlip.style.msUserSelect = 'none';
+cardTilt.style.userSelect = 'none';
+cardTiltY.style.userSelect = 'none';
+
+// =================
+// 判断Safari
 // =================
 var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
@@ -56,17 +67,14 @@ function enableGyroscope() {
             }, { once: true });
         }
     } else {
-        // 非 Safari 浏览器：页面加载后立即启用
+        // 非Safari：自动启用，无需点击
         if (window.DeviceOrientationEvent) {
             inputMode = 'gyro';
-            // 直接监听，无需点击
             window.addEventListener('deviceorientation', handleOrientation, true);
-            console.log('✅ 非 Safari 移动端陀螺仪已自动启用');
+            console.log('✅ 非Safari移动端陀螺仪自动启用');
         }
     }
 }
-
-// 页面加载完成后立即启用陀螺仪
 window.addEventListener('DOMContentLoaded', enableGyroscope);
 
 // =================
@@ -92,19 +100,34 @@ function renderLoop() {
     currentTiltX += (targetX - currentTiltX) * 0.1;
     currentTiltY += (targetY - currentTiltY) * 0.1;
 
-    cardTilt.style.transform = `rotateX(${currentTiltX}deg) rotateY(${currentTiltY}deg)`;
+    // 分层写入：X轴Y轴分离
+    cardTilt.style.transform = `rotateX(${currentTiltX}deg)`;
+    cardTiltY.style.transform = `rotateY(${currentTiltY + flipAngle}deg)`;
+
     requestAnimationFrame(renderLoop);
 }
 renderLoop();
 
 // =================
-// 点击翻转
+// 点击翻转 & 重置方向
 // =================
 cardFlip.addEventListener('click', () => {
     flipAngle += 180;
     cardFlip.style.transform = `rotateY(${flipAngle}deg)`;
-    currentTiltX = 0;
-    currentTiltY = 0;
+
+    // 点击后重置当前方向为陀螺仪初始方向
+    if (inputMode === 'gyro') {
+        currentTiltX = gyroCurrentX;
+        currentTiltY = gyroCurrentY;
+    }
+});
+
+// 点击页面任意地方也重置陀螺仪方向
+document.addEventListener('click', () => {
+    if (inputMode === 'gyro') {
+        currentTiltX = gyroCurrentX;
+        currentTiltY = gyroCurrentY;
+    }
 });
 
 // =================
@@ -119,7 +142,7 @@ window.addEventListener('scroll', () => {
 
     const aboutScrollStart = 200, aboutScrollEnd = 500, aboutFadeOut = 1200;
     const aboutOpacity = scrollY < aboutFadeOut ? Math.min(1, Math.max(0, (scrollY - aboutScrollStart) / (aboutScrollEnd - aboutScrollStart))) : Math.max(0, 1 - (scrollY - aboutFadeOut) / 300);
-    const aboutTranslateY = scrollY < aboutFadeOut ? Math.max(0, 50 - (scrollY - aboutScrollStart) / 8) : Math.max(0, -30 + (scrollY - aboutScrollOut) / 10);
+    const aboutTranslateY = scrollY < aboutFadeOut ? Math.max(0, 50 - (scrollY - aboutScrollStart) / 8) : Math.max(0, -30 + (scrollY - aboutFadeOut) / 10);
     aboutSection.style.opacity = aboutOpacity;
     aboutSection.style.transform = `translateY(${aboutTranslateY}px)`;
 
