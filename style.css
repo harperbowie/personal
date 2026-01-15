@@ -44,12 +44,34 @@ body { font-family:-apple-system, BlinkMacSystemFont, "SF Pro Display","Inter",s
     -webkit-transform-style:preserve-3d;
 }
 .card-back { transform:rotateY(180deg); flex-direction:column; padding:40px; }
+
+/* 正面标题 */
 .card-title { font-size:42px; font-weight:500; font-style:italic; letter-spacing:0.03em; color:#000; font-family:"Didot","Bodoni MT","Playfair Display","Cormorant Garamond","Georgia",serif; }
-.card-tagline { font-size:22px; font-weight:400; margin-bottom:8px; text-align:center; font-style:italic; letter-spacing:0.02em; color:#000; font-family:"Didot","Bodoni MT","Playfair Display","Cormorant Garamond","Georgia",serif; }
-.card-subtitle { font-size:15px; color:#86868b; text-align:center; font-weight:400; }
+
+/* 卡片背面三行文字 */
+.card-back-line {
+    font-family:"Didot","Bodoni MT","Playfair Display","Cormorant Garamond","Georgia",serif;
+    font-style:italic;
+    font-weight:400;
+    text-align:center;
+    margin:6px 0;
+}
+.card-back-line:nth-child(1) { font-size:22px; } /* 第一行稍大 */
+.card-back-line:nth-child(2) { font-size:20px; } /* 第二行 */
+.card-back-line:nth-child(3) { font-size:20px; letter-spacing:0.02em; } /* 第三行邮箱 */
+
+/* 按钮上方文字 */
+.contact-text {
+    font-family:"Didot","Bodoni MT","Playfair Display","Cormorant Garamond","Georgia",serif;
+    font-style:italic;
+    font-size:20px; /* 与背面第二行一致 */
+    color:#1d1d1f;
+    margin-bottom:12px;
+    text-align:center;
+}
 
 /* Buttons */
-.contact-button { margin-top:50px; padding:18px 48px; font-size:17px; font-weight:400; color:#1d1d1f; background:#fff; border:1px solid #d2d2d7; border-radius:980px; cursor:pointer; transition:all 0.3s cubic-bezier(0.4,0,0.2,1); box-shadow:0 2px 8px rgba(0,0,0,0.04);}
+.contact-button { margin-top:0px; padding:18px 48px; font-size:17px; font-weight:400; color:#1d1d1f; background:#fff; border:1px solid #d2d2d7; border-radius:980px; cursor:pointer; transition:all 0.3s cubic-bezier(0.4,0,0.2,1); box-shadow:0 2px 8px rgba(0,0,0,0.04);}
 .contact-button:hover { transform:scale(1.02); box-shadow:0 4px 12px rgba(0,0,0,0.08); background:#f5f5f7;}
 .contact-button:active { transform:scale(0.98);}
 
@@ -75,7 +97,8 @@ body { font-family:-apple-system, BlinkMacSystemFont, "SF Pro Display","Inter",s
 /* Mobile */
 @media(max-width:768px){
     .card-scale-wrapper { width:90vw; max-width:380px; height:calc(90vw*240/380); }
-    .card-title{font-size:32px;} .card-tagline{font-size:18px;} .card-subtitle{font-size:13px;}
+    .card-title{font-size:32px;} .card-back-line:nth-child(1){font-size:20px;} .card-back-line:nth-child(2){font-size:18px;} .card-back-line:nth-child(3){font-size:18px;}
+    .contact-text{font-size:18px;}
     .contact-button{margin-top:40px; padding:16px 40px; font-size:15px;}
     .about-section{padding:60px 24px;} .about-title{font-size:28px; margin-bottom:20px;} .about-content{font-size:15px;}
     .divider{margin:50px 0;} .heart-container{font-size:80px;} .input-group{flex-direction:column; gap:16px;}
