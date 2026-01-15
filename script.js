@@ -82,28 +82,39 @@ if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigat
 // renderLoop
 // =================
 function renderLoop(){
-    let targetX=0,targetY=0;
-    if(inputMode==='gyro'){
-        gyroCurrentX += (gyroTargetX - gyroCurrentX)*0.1;
-        gyroCurrentY += (gyroTargetY - gyroCurrentY)*0.1;
-        targetX=gyroCurrentX;
-        targetY=gyroCurrentY;
+    let targetX = 0, targetY = 0;
+
+    if(inputMode === 'gyro'){
+        // 陀螺仪分支保持原样
+        gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.1;
+        gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.1;
+        targetX = gyroCurrentX;
+        targetY = gyroCurrentY;
     } else {
-        const rect=cardFlip.getBoundingClientRect();
-        const cx=rect.left+rect.width/2;
-        const cy=rect.top+rect.height/2;
-        const dx=mouseX-cx;
-        const dy=mouseY-cy;
-        targetX = ((mouseY - cy) / (rect.height / 2)) * 6;
-        targetY = ((mouseX - cx) / (rect.width / 2)) * 6;
+        // 鼠标分支
+        const rect = cardFlip.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+
+        // 鼠标相对于卡片中心的偏移
+        const dx = mouseX - cx;  // 左负右正
+        const dy = mouseY - cy;  // 上负下正
+
+        // 核心公式（保证“鼠标在哪个方向，该角抬起”）
+        targetX = -(dy / (rect.height / 2)) * 6; // 上抬为正
+        targetY = (dx / (rect.width / 2)) * 6;   // 右抬为正
     }
 
-    currentTiltX += (targetX - currentTiltX)*0.1;
-    currentTiltY += (targetY - currentTiltY)*0.1;
+    // 平滑动画
+    currentTiltX += (targetX - currentTiltX) * 0.1;
+    currentTiltY += (targetY - currentTiltY) * 0.1;
 
-    cardTilt.style.transform=`rotateX(${currentTiltX}deg) rotateY(${currentTiltY}deg)`;
+    // 应用到卡片
+    cardTilt.style.transform = `rotateX(${currentTiltX}deg) rotateY(${currentTiltY}deg)`;
+
     requestAnimationFrame(renderLoop);
 }
+
 renderLoop();
 
 // =================
