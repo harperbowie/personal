@@ -4,7 +4,7 @@
 var mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
 var gyroTargetX = 0, gyroTargetY = 0;
 var gyroCurrentX = 0, gyroCurrentY = 0;
-var initialGyroX = null, initialGyroY = null; // 当前设备初始方向
+var initialGyroX = null, initialGyroY = null; // 记录设备当前方向
 var inputMode = 'mouse';
 var flipAngle = 0, currentTiltX = 0, currentTiltY = 0;
 
@@ -42,14 +42,14 @@ function handleOrientation(event) {
 
     inputMode = 'gyro';
 
-    // 首次获取设备当前方向
+    // 第一次触发时记录初始方向
     if (initialGyroX === null || initialGyroY === null) {
         initialGyroX = event.beta;
         initialGyroY = event.gamma;
-        console.log('📱 初始方向:', initialGyroX.toFixed(1), initialGyroY.toFixed(1));
+        console.log('📱 初始方向记录：', initialGyroX.toFixed(1), initialGyroY.toFixed(1));
     }
 
-    // 相对于初始方向的偏移，放大幅度
+    // 相对于初始方向的偏移（放大幅度）
     gyroTargetX = Math.max(-30, Math.min(30, (event.beta - initialGyroX) * 0.8));
     gyroTargetY = Math.max(-30, Math.min(30, (event.gamma - initialGyroY) * 0.8));
 }
@@ -70,7 +70,6 @@ function enableGyroscope() {
                 .catch(console.error);
         }, { once: true });
     } else {
-        // 非Safari直接绑定
         window.addEventListener('deviceorientation', handleOrientation, true);
     }
 }
@@ -83,13 +82,12 @@ function renderLoop() {
     let targetX = 0, targetY = 0;
 
     if (inputMode === 'gyro') {
-        // 陀螺仪低通滤波
+        // 低通滤波
         gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.1;
         gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.1;
         targetX = gyroCurrentX;
         targetY = gyroCurrentY;
     } else {
-        // 鼠标相对卡片中心
         const rect = cardFlip.getBoundingClientRect();
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
@@ -112,7 +110,7 @@ renderLoop();
 // 点击翻转
 // ======================
 cardFlip.addEventListener('click', () => {
-    flipAngle += 180; // 永远累加，单方向旋转
+    flipAngle += 180;
     cardFlip.style.transform = `rotateY(${flipAngle}deg)`;
     currentTiltX = 0;
     currentTiltY = 0;
