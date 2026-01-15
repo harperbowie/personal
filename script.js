@@ -1,13 +1,10 @@
-// State
-var rotation = 0;
-var isRotating = false;
-var isHovering = false;
-var mousePos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-var deviceTilt = { x: 0, y: 0 };
-var hasGyroscope = false;
-var gyroPermissionGranted = false;
-var animationFrameId = null;
-var fireworksTimer = null;
+// 纯输入数据
+var mouseX = window.innerWidth / 2;
+var mouseY = window.innerHeight / 2;
+var gyroX = 0;
+var gyroY = 0;
+var useGyro = false;
+var cardRotation = 0; // 翻转累计角度
 
 var cardContainer = document.getElementById('cardContainer');
 var cardInner = document.getElementById('cardInner');
@@ -17,9 +14,6 @@ var secretInput = document.getElementById('secretInput');
 var secretButton = document.getElementById('secretButton');
 var heartContainer = document.getElementById('heartContainer');
 var fireworksContainer = document.getElementById('fireworksContainer');
-
-// 检测是否是移动设备
-var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 // Scroll handling
 function handleScroll() {
@@ -49,143 +43,100 @@ function handleScroll() {
 
 window.addEventListener('scroll', handleScroll);
 
-// 桌面端：实时跟踪鼠标
-if (!isMobile) {
-    window.addEventListener('mousemove', function(e) {
-        mousePos.x = e.clientX;
-        mousePos.y = e.clientY;
-    });
+// 输入1: 鼠标位置（持续更新）
+window.addEventListener('mousemove', function(e) {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+});
+
+// 输入2: 陀螺仪（持续更新）
+function handleOrientation(event) {
+    if (event.beta !== null && event.gamma !== null) {
+        useGyro = true;
+        gyroX = Math.max(-25, Math.min(25, event.beta / 2));
+        gyroY = Math.max(-25, Math.min(25, event.gamma / 2));
+    }
 }
 
-// 移动端：陀螺仪
-if (isMobile) {
-    console.log('移动设备检测到');
-    
-    function handleOrientation(event) {
-        if (event.beta !== null && event.gamma !== null) {
-            hasGyroscope = true;
-            // beta: 前后倾斜 (-180 to 180)
-            // gamma: 左右倾斜 (-90 to 90)
-            deviceTilt.x = Math.max(-20, Math.min(20, event.beta / 2));
-            deviceTilt.y = Math.max(-20, Math.min(20, event.gamma / 2));
-        }
-    }
-    
-    // iOS 13+ 需要请求权限
-    function requestPermission() {
-        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+// 尝试启动陀螺仪
+if (typeof DeviceOrientationEvent !== 'undefined') {
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        // iOS 13+
+        document.addEventListener('touchstart', function() {
             DeviceOrientationEvent.requestPermission()
                 .then(function(response) {
                     if (response === 'granted') {
                         window.addEventListener('deviceorientation', handleOrientation, true);
-                        gyroPermissionGranted = true;
-                        console.log('✅ 陀螺仪权限已授予');
-                    } else {
-                        console.log('❌ 陀螺仪权限被拒绝');
+                        console.log('陀螺仪已启用');
                     }
                 })
-                .catch(function(error) {
-                    console.error('陀螺仪权限请求失败:', error);
-                });
-        } else {
-            // 安卓或旧版iOS
-            window.addEventListener('deviceorientation', handleOrientation, true);
-            gyroPermissionGranted = true;
-            console.log('✅ 陀螺仪已启用（无需权限）');
-        }
+                .catch(console.error);
+        }, { once: true });
+    } else {
+        // 其他设备
+        window.addEventListener('deviceorientation', handleOrientation, true);
     }
-    
-    // 用户首次触摸屏幕时请求权限
-    var permissionRequested = false;
-    document.addEventListener('touchstart', function() {
-        if (!permissionRequested) {
-            permissionRequested = true;
-            requestPermission();
-        }
-    }, { once: true });
 }
 
-// 计算鼠标影响（桌面端）
-function calculateMouseTilt() {
-    var rect = cardContainer.getBoundingClientRect();
-    var cardCenterX = rect.left + rect.width / 2;
-    var cardCenterY = rect.top + rect.height / 2;
-    
-    var deltaX = mousePos.x - cardCenterX;
-    var deltaY = mousePos.y - cardCenterY;
-    var distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-    
+// 核心：每一帧重新计算 transform
+function renderLoop() {
     var tiltX = 0;
     var tiltY = 0;
     
-    if (isHovering) {
-        // 在名片上：最大15度
-        var relativeX = mousePos.x - rect.left;
-        var relativeY = mousePos.y - rect.top;
-        var centerX = rect.width / 2;
-        var centerY = rect.height / 2;
-        
-        tiltX = -((relativeY - centerY) / centerY) * 15;
-        tiltY = ((relativeX - centerX) / centerX) * 15;
+    // 优先使用陀螺仪
+    if (useGyro && (Math.abs(gyroX) > 0.1 || Math.abs(gyroY) > 0.1)) {
+        tiltX = gyroX;
+        tiltY = gyroY;
     } else {
-        // 不在名片上：根据距离
-        var maxDistance = 800;
-        var influence = Math.max(0, 1 - (distance / maxDistance));
+        // 否则用鼠标
+        var rect = cardContainer.getBoundingClientRect();
+        var cardCenterX = rect.left + rect.width / 2;
+        var cardCenterY = rect.top + rect.height / 2;
         
-        // 基础倾斜角度
-        var baseTilt = 8;
+        var deltaX = mouseX - cardCenterX;
+        var deltaY = mouseY - cardCenterY;
         
-        tiltX = -(deltaY / 400) * baseTilt * (0.4 + influence * 0.6);
-        tiltY = (deltaX / 400) * baseTilt * (0.4 + influence * 0.6);
-    }
-    
-    return { x: tiltX, y: tiltY };
-}
-
-// 主动画循环 - 每一帧都计算并立即应用
-function animate() {
-    if (!isRotating) {
-        var tiltX = 0;
-        var tiltY = 0;
+        // 检查鼠标是否在名片内
+        var isInside = (
+            mouseX >= rect.left && 
+            mouseX <= rect.right && 
+            mouseY >= rect.top && 
+            mouseY <= rect.bottom
+        );
         
-        if (isMobile && hasGyroscope) {
-            // 移动端使用陀螺仪
-            tiltX = deviceTilt.x;
-            tiltY = deviceTilt.y;
-        } else if (!isMobile) {
-            // 桌面端使用鼠标，实时计算
-            var mouseTilt = calculateMouseTilt();
-            tiltX = mouseTilt.x;
-            tiltY = mouseTilt.y;
+        if (isInside) {
+            // 在名片上：最大15度
+            var relativeX = mouseX - rect.left;
+            var relativeY = mouseY - rect.top;
+            var centerX = rect.width / 2;
+            var centerY = rect.height / 2;
+            
+            tiltX = -((relativeY - centerY) / centerY) * 15;
+            tiltY = ((relativeX - centerX) / centerX) * 15;
+        } else {
+            // 不在名片上：距离影响
+            var distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            var maxDistance = 1000;
+            var influence = Math.max(0, 1 - (distance / maxDistance));
+            
+            var baseTilt = 10;
+            tiltX = -(deltaY / 500) * baseTilt * (0.3 + influence * 0.7);
+            tiltY = (deltaX / 500) * baseTilt * (0.3 + influence * 0.7);
         }
-        
-        // 直接应用，无延迟
-        cardInner.style.transform = 'rotateX(' + tiltX + 'deg) rotateY(' + (tiltY + rotation) + 'deg)';
     }
     
-    requestAnimationFrame(animate);
+    // 直接应用 transform，包含翻转角度
+    cardInner.style.transform = 'rotateX(' + tiltX + 'deg) rotateY(' + (tiltY + cardRotation) + 'deg)';
+    
+    requestAnimationFrame(renderLoop);
 }
 
-// 启动动画循环
-animate();
+// 启动渲染循环
+renderLoop();
 
-// Card hover
-cardContainer.addEventListener('mouseenter', function() {
-    isHovering = true;
-});
-
-cardContainer.addEventListener('mouseleave', function() {
-    isHovering = false;
-});
-
-// Card click
+// 点击翻转：只改变 cardRotation 数值
 cardContainer.addEventListener('click', function() {
-    isRotating = true;
-    rotation += 180;
-    
-    setTimeout(function() {
-        isRotating = false;
-    }, 600);
+    cardRotation += 180;
 });
 
 // Fireworks
@@ -253,7 +204,7 @@ function handleEasterEgg() {
         heartContainer.classList.add('show');
         
         launchFireworks();
-        fireworksTimer = setInterval(launchFireworks, 1200);
+        var fireworksTimer = setInterval(launchFireworks, 1200);
         
         setTimeout(function() {
             heartContainer.classList.remove('show');
@@ -270,8 +221,4 @@ secretInput.addEventListener('keypress', function(e) {
     }
 });
 
-// 调试信息
-console.log('设备类型:', isMobile ? '移动设备（将使用陀螺仪）' : '桌面设备（将使用鼠标）');
-if (isMobile) {
-    console.log('请触摸屏幕以启用陀螺仪');
-}
+console.log('动画循环已启动 - 名片会持续响应输入');
