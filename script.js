@@ -94,16 +94,21 @@ function renderLoop(){
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
 
-        const dx = mouseX - cx; // 左负右正
-        const dy = mouseY - cy; // 上负下正
+        // 鼠标相对中心百分比
+        let px = (mouseX - cx) / (rect.width / 2);  // 左-1 右+1
+        let py = (mouseY - cy) / (rect.height / 2); // 上-1 下+1
 
-        // ✅ 核心修正：
-        // rotateX 正值下抬，所以 dy 不加负号，让上抬为正
-        targetX = (dy / (rect.height / 2)) * 10; // 上抬为正
-        targetY = (dx / (rect.width / 2)) * 10;  // 右抬为正
+        // 限制范围
+        px = Math.max(-1, Math.min(1, px));
+        py = Math.max(-1, Math.min(1, py));
+
+        // 核心公式（rotateX/Y 对应鼠标四角）
+        const maxAngle = 10; // 最大倾斜角度
+        targetX = -py * maxAngle; // 鼠标上 -> 上边抬
+        targetY = px * maxAngle;  // 鼠标右 -> 右边抬
     }
 
-    // 平滑动画
+    // 平滑过渡
     currentTiltX += (targetX - currentTiltX) * 0.15;
     currentTiltY += (targetY - currentTiltY) * 0.15;
 
@@ -112,6 +117,7 @@ function renderLoop(){
 }
 
 renderLoop();
+
 
 
 
