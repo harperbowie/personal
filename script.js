@@ -32,7 +32,6 @@ window.addEventListener('mousemove', e => {
 function handleOrientation(event) {
     if (event.beta !== null && event.gamma !== null) {
         inputMode = 'gyro';
-        // 幅度加大
         gyroTargetX = Math.max(-24, Math.min(24, event.beta / 2));
         gyroTargetY = Math.max(-24, Math.min(24, event.gamma / 2));
     }
@@ -57,17 +56,18 @@ function enableGyroscope() {
             }, { once: true });
         }
     } else {
-        // 非 Safari 浏览器：页面加载后直接绑定
+        // 非 Safari 浏览器：页面加载后立即启用
         if (window.DeviceOrientationEvent) {
-            inputMode = 'gyro'; // 刷新/载入立刻启用
+            inputMode = 'gyro';
+            // 直接监听，无需点击
             window.addEventListener('deviceorientation', handleOrientation, true);
             console.log('✅ 非 Safari 移动端陀螺仪已自动启用');
         }
     }
 }
 
-// 页面加载后启用陀螺仪
-enableGyroscope();
+// 页面加载完成后立即启用陀螺仪
+window.addEventListener('DOMContentLoaded', enableGyroscope);
 
 // =================
 // renderLoop
@@ -119,7 +119,7 @@ window.addEventListener('scroll', () => {
 
     const aboutScrollStart = 200, aboutScrollEnd = 500, aboutFadeOut = 1200;
     const aboutOpacity = scrollY < aboutFadeOut ? Math.min(1, Math.max(0, (scrollY - aboutScrollStart) / (aboutScrollEnd - aboutScrollStart))) : Math.max(0, 1 - (scrollY - aboutFadeOut) / 300);
-    const aboutTranslateY = scrollY < aboutFadeOut ? Math.max(0, 50 - (scrollY - aboutScrollStart) / 8) : Math.max(0, -30 + (scrollY - aboutFadeOut) / 10);
+    const aboutTranslateY = scrollY < aboutFadeOut ? Math.max(0, 50 - (scrollY - aboutScrollStart) / 8) : Math.max(0, -30 + (scrollY - aboutScrollOut) / 10);
     aboutSection.style.opacity = aboutOpacity;
     aboutSection.style.transform = `translateY(${aboutTranslateY}px)`;
 
@@ -187,6 +187,4 @@ function handleEasterEgg() {
 }
 
 secretButton.addEventListener('click', handleEasterEgg);
-secretInput.addEventListener('keypress', e => {
-    if (e.key === 'Enter') handleEasterEgg();
-});
+secretInput.addEventListener('keypress', e => { if (e.key === 'Enter') handleEasterEgg(); });
