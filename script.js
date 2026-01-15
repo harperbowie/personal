@@ -1,6 +1,5 @@
 let mouseX = window.innerWidth / 2;
 let mouseY = window.innerHeight / 2;
-
 let gyroTargetX = 0, gyroTargetY = 0;
 let gyroCurrentX = 0, gyroCurrentY = 0;
 
@@ -36,7 +35,7 @@ if (window.DeviceOrientationEvent) {
                     window.addEventListener('deviceorientation', handleOrientation, true);
                 }
             });
-        }, { once:true });
+        }, { once: true });
     } else {
         window.addEventListener('deviceorientation', handleOrientation, true);
     }
@@ -54,33 +53,4 @@ function renderLoop() {
         targetY = gyroCurrentY;
     } else {
         const rect = cardFlip.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        const dx = mouseX - cx;
-        const dy = mouseY - cy;
-        targetX = (-dy / rect.height) * 12;
-        targetY = ( dx / rect.width ) * 12;
-    }
-
-    /* 🔴 关键：根据正反面反转 Y */
-    const facing = Math.cos(flipAngle * Math.PI / 180) >= 0 ? 1 : -1;
-
-    currentTiltX += (targetX - currentTiltX) * 0.1;
-    currentTiltY += ((targetY * facing) - currentTiltY) * 0.1;
-
-    cardTilt.style.transform =
-        `rotateX(${currentTiltX}deg) rotateY(${currentTiltY}deg)`;
-
-    requestAnimationFrame(renderLoop);
-}
-renderLoop();
-
-/* ===== 翻转（永远同一方向） ===== */
-cardFlip.addEventListener('click', () => {
-    flipAngle += 180;
-    cardFlip.style.transform = `rotateY(${flipAngle}deg)`;
-
-    /* 翻转瞬间归零 tilt，防闪 */
-    currentTiltX = 0;
-    currentTiltY = 0;
-});
+        const cx = rect.left + rect.width /
