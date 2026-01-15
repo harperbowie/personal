@@ -32,15 +32,18 @@ window.addEventListener('mousemove', e => {
 function handleOrientation(event) {
     if (event.beta !== null && event.gamma !== null) {
         inputMode = 'gyro';
-        // 增加幅度
+        // 幅度加大
         gyroTargetX = Math.max(-24, Math.min(24, event.beta / 2));
         gyroTargetY = Math.max(-24, Math.min(24, event.gamma / 2));
     }
 }
 
+// =================
+// 启用陀螺仪
+// =================
 function enableGyroscope() {
     if (isSafari) {
-        // Safari 浏览器需要点击后请求权限
+        // Safari：点击授权
         if (typeof DeviceOrientationEvent.requestPermission === 'function') {
             document.addEventListener('click', function () {
                 DeviceOrientationEvent.requestPermission()
@@ -54,8 +57,9 @@ function enableGyroscope() {
             }, { once: true });
         }
     } else {
-        // 非 Safari 浏览器，自动绑定
+        // 非 Safari 浏览器：页面加载后直接绑定
         if (window.DeviceOrientationEvent) {
+            inputMode = 'gyro'; // 刷新/载入立刻启用
             window.addEventListener('deviceorientation', handleOrientation, true);
             console.log('✅ 非 Safari 移动端陀螺仪已自动启用');
         }
@@ -100,7 +104,7 @@ cardFlip.addEventListener('click', () => {
     flipAngle += 180;
     cardFlip.style.transform = `rotateY(${flipAngle}deg)`;
     currentTiltX = 0;
-    currentTiltY = 0; // 重置 tilt 防止跳动
+    currentTiltY = 0;
 });
 
 // =================
