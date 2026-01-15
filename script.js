@@ -35,39 +35,23 @@ window.addEventListener('mousemove', e => {
 });
 
 // ======================
-// 陀螺仪输入（稳定后锁定初始方向）
+// 陀螺仪输入（立即锁定初始方向）
 // ======================
-var waitingForStableOrientation = true;
-
 function handleOrientation(event) {
     if (event.beta === null || event.gamma === null) return;
 
     inputMode = 'gyro';
 
-    // 只在等待稳定时记录初始方向
-    if (waitingForStableOrientation) {
-        if (initialGyroX === null) {
-            initialGyroX = event.beta;
-            initialGyroY = event.gamma;
-        } else {
-            // 检测方向是否稳定（变化小于1度）
-            var diffX = Math.abs(initialGyroX - event.beta);
-            var diffY = Math.abs(initialGyroY - event.gamma);
-            if (diffX < 1 && diffY < 1) {
-                waitingForStableOrientation = false;
-                console.log('📱 初始方向固定：', initialGyroX.toFixed(1), initialGyroY.toFixed(1));
-            } else {
-                initialGyroX = event.beta;
-                initialGyroY = event.gamma;
-            }
-        }
+    // 第一次触发时立即记录初始方向
+    if (initialGyroX === null || initialGyroY === null) {
+        initialGyroX = event.beta;
+        initialGyroY = event.gamma;
+        console.log('📱 初始方向固定：', initialGyroX.toFixed(1), initialGyroY.toFixed(1));
     }
 
-    // 相对于初始方向的偏移（放大幅度）
-    if (!waitingForStableOrientation) {
-        gyroTargetX = Math.max(-30, Math.min(30, (event.beta - initialGyroX) * 0.8));
-        gyroTargetY = Math.max(-30, Math.min(30, (event.gamma - initialGyroY) * 0.8));
-    }
+    // 计算偏移
+    gyroTargetX = Math.max(-30, Math.min(30, (event.beta - initialGyroX) * 0.8));
+    gyroTargetY = Math.max(-30, Math.min(30, (event.gamma - initialGyroY) * 0.8));
 }
 
 // ======================
@@ -75,6 +59,7 @@ function handleOrientation(event) {
 // ======================
 function enableGyroscope() {
     if (isSafari && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        // iOS Safari 需要用户点击才能请求权限
         document.addEventListener('click', function () {
             DeviceOrientationEvent.requestPermission()
                 .then(response => {
@@ -97,7 +82,7 @@ enableGyroscope();
 function renderLoop() {
     let targetX = 0, targetY = 0;
 
-    if (inputMode === 'gyro' && !waitingForStableOrientation) {
+    if (inputMode === 'gyro') {
         // 低通滤波
         gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.1;
         gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.1;
