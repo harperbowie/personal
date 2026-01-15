@@ -80,6 +80,9 @@ if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigat
 // =================
 // renderLoop
 // =================
+// =================
+// renderLoop
+// =================
 function renderLoop() {
     let targetX = 0, targetY = 0;
 
@@ -94,22 +97,23 @@ function renderLoop() {
         const cy = rect.top + rect.height/2;
 
         // 计算鼠标相对于卡片中心的标准化位置
-        // 范围：left(-1) ~ right(+1), top(-1) ~ bottom(+1)
         let px = (mouseX - cx) / (rect.width / 2);
         let py = (mouseY - cy) / (rect.height / 2);
 
         px = Math.max(-1, Math.min(1, px));
         py = Math.max(-1, Math.min(1, py));
 
-        const maxAngle = 10; // 最大倾斜角
+        const maxAngle = 10;
         
-        // ✅ 关键修改：反转旋转方向以匹配直觉
-        // 因为CSS的rotateX(正值)是向下，rotateY(正值)是向左
-        // 所以我们需要反直觉地设置：
-        // - 鼠标在上方(py为负) → 卡片应该向上旋转 → rotateX需要负值
-        // - 鼠标在右侧(px为正) → 卡片应该向右旋转 → rotateY需要负值
-        targetX = py * maxAngle;   // 鼠标上 → rotateX负值 → 向上旋转
-        targetY = -px * maxAngle;  // 鼠标右 → rotateY负值 → 向右旋转
+        // ✅ 正确的倾斜逻辑：
+        // 鼠标在右上角(px=1, py=-1)时，我们希望右上角抬起
+        // 这需要：X轴向上旋转(负值)，Y轴向左旋转(正值)
+        // 但注意：rotateY正值是向左，负值是向右
+        // 所以：
+        // - 鼠标在右侧(px>0) → Y轴应该向左 → rotateY正值
+        // - 鼠标在左侧(px<0) → Y轴应该向右 → rotateY负值
+        targetX = -py * maxAngle;   // 鼠标在上(py负) → rotateX负值 → 向上旋转
+        targetY = px * maxAngle;    // 鼠标在右(px正) → rotateY正值 → 向左旋转
     }
 
     currentTiltX += (targetX - currentTiltX) * 0.1;
