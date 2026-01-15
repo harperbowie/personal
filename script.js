@@ -35,24 +35,29 @@ function handleOrientation(event){
 }
 
 // 适配Safari和其他浏览器
-if(typeof DeviceOrientationEvent!=='undefined'){
-    if(typeof DeviceOrientationEvent.requestPermission==='function'){
-        // Safari浏览器需要通过点击来请求权限
-        document.addEventListener('touchstart', function(){
-            DeviceOrientationEvent.requestPermission()
-            .then(res=>{ 
-                if(res==='granted'){ 
-                    window.addEventListener('deviceorientation', handleOrientation, true);
-                    console.log('✅ 陀螺仪权限已启用');
-                } 
-            })
-            .catch(console.error);
-        },{once:true});
-    }else{
-        // 其他浏览器直接监听陀螺仪事件
-        window.addEventListener('deviceorientation', handleOrientation, true);
+function enableGyroscope(){
+    if(typeof DeviceOrientationEvent !== 'undefined'){
+        if(typeof DeviceOrientationEvent.requestPermission === 'function'){
+            // Safari浏览器需要通过点击来请求权限
+            document.addEventListener('touchstart', function(){
+                DeviceOrientationEvent.requestPermission()
+                .then(res=>{ 
+                    if(res==='granted'){ 
+                        window.addEventListener('deviceorientation', handleOrientation, true);
+                        console.log('✅ 陀螺仪权限已启用');
+                    } 
+                })
+                .catch(console.error);
+            },{once:true});
+        }else{
+            // 其他浏览器直接监听陀螺仪事件
+            window.addEventListener('deviceorientation', handleOrientation, true);
+        }
     }
 }
+
+// 调用enableGyroscope，确保陀螺仪事件可以启用
+enableGyroscope();
 
 // =================
 // renderLoop
