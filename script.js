@@ -7,14 +7,14 @@ var gyroTargetX = 0;
 var gyroTargetY = 0;
 var gyroCurrentX = 0;
 var gyroCurrentY = 0;
-var inputMode = 'mouse'; // 'mouse' | 'gyro'
+var inputMode = 'mouse';
 var flipRotation = 0;
 
-// 当前 tilt 值（带插值）
 var currentTiltX = 0;
 var currentTiltY = 0;
 
-// DOM
+// DOM（三层结构）
+var cardWrapper = document.getElementById('cardWrapper');
 var cardContainer = document.getElementById('cardContainer');
 var cardInner = document.getElementById('cardInner');
 var aboutSection = document.getElementById('aboutSection');
@@ -28,49 +28,39 @@ var fireworksContainer = document.getElementById('fireworksContainer');
 // 2. 输入层
 // ============================================
 
-// 鼠标：切换到 mouse 模式
+// 鼠标
 window.addEventListener('mousemove', function(e) {
     mouseX = e.clientX;
     mouseY = e.clientY;
     inputMode = 'mouse';
 });
 
-// 陀螺仪：持续更新，切换到 gyro 模式
+// 陀螺仪
 function handleOrientation(event) {
     if (event.beta !== null && event.gamma !== null) {
-        // 持续更新 target 值
         gyroTargetX = Math.max(-12, Math.min(12, event.beta / 3));
         gyroTargetY = Math.max(-12, Math.min(12, event.gamma / 3));
         
-        // 只要有数据就切换到 gyro 模式
         if (Math.abs(event.beta) > 0.1 || Math.abs(event.gamma) > 0.1) {
             inputMode = 'gyro';
         }
     }
 }
 
-// iOS 权限处理
 if (typeof DeviceOrientationEvent !== 'undefined') {
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-        // iOS 13+：首次触摸时请求权限
-        document.addEventListener('touchstart', function requestPermission() {
+        document.addEventListener('touchstart', function() {
             DeviceOrientationEvent.requestPermission()
                 .then(function(response) {
                     if (response === 'granted') {
                         window.addEventListener('deviceorientation', handleOrientation, true);
                         console.log('✅ 陀螺仪已启用');
-                    } else {
-                        console.log('❌ 陀螺仪权限被拒绝');
                     }
                 })
-                .catch(function(error) {
-                    console.error('陀螺仪权限请求失败:', error);
-                });
+                .catch(console.error);
         }, { once: true });
     } else {
-        // 非 iOS 设备：直接启用
         window.addEventListener('deviceorientation', handleOrientation, true);
-        console.log('✅ 陀螺仪监听已启动');
     }
 }
 
@@ -82,14 +72,14 @@ function renderLoop() {
     var targetTiltY = 0;
     
     if (inputMode === 'gyro') {
-        // 陀螺仪模式：低通滤波
+        // 陀螺仪：低通滤波
         gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.1;
         gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.1;
         
         targetTiltX = gyroCurrentX;
         targetTiltY = gyroCurrentY;
     } else {
-        // 鼠标模式：相对卡片中心
+        // 鼠标：相对 cardContainer 中心
         var rect = cardContainer.getBoundingClientRect();
         var cx = rect.left + rect.width / 2;
         var cy = rect.top + rect.height / 2;
@@ -97,24 +87,21 @@ function renderLoop() {
         var dx = mouseX - cx;
         var dy = mouseY - cy;
         
-        // normalize 到 [-1, 1]
         var nx = dx / (rect.width / 2);
         var ny = dy / (rect.height / 2);
         
-        // clamp
         nx = Math.max(-1, Math.min(1, nx));
         ny = Math.max(-1, Math.min(1, ny));
         
-        // Apple 标准：±12°
         targetTiltX = -ny * 12;
         targetTiltY = nx * 12;
     }
     
-    // 插值（低通滤波）
+    // 插值
     currentTiltX += (targetTiltX - currentTiltX) * 0.1;
     currentTiltY += (targetTiltY - currentTiltY) * 0.1;
     
-    // 写入 cardInner（只负责 tilt）
+    // 写入 cardInner（持续更新）
     cardInner.style.transform = 
         'rotateX(' + currentTiltX + 'deg) ' +
         'rotateY(' + currentTiltY + 'deg)';
@@ -125,16 +112,15 @@ function renderLoop() {
 renderLoop();
 
 // ============================================
-// 4. 翻转（cardContainer + CSS transition）
+// 4. 翻转（逆时针累加）
 // ============================================
 cardContainer.addEventListener('click', function() {
-    flipRotation += 180;
-    // CSS transition 会自动处理动画
+    flipRotation -= 180; // 逆时针
     cardContainer.style.transform = 'rotateY(' + flipRotation + 'deg)';
 });
 
 // ============================================
-// 5. Scroll（只改 opacity/scale）
+// 5. Scroll（只改 wrapper 的 opacity/scale）
 // ============================================
 window.addEventListener('scroll', function() {
     var scrollY = window.scrollY;
@@ -142,11 +128,8 @@ window.addEventListener('scroll', function() {
     var cardOpacity = Math.max(0, 1 - scrollY / 400);
     var cardScale = Math.max(0.8, 1 - scrollY / 1000);
     
-    // 保持翻转状态，叠加 scale
-    cardContainer.style.opacity = cardOpacity;
-    cardContainer.style.transform = 
-        'rotateY(' + flipRotation + 'deg) ' +
-        'scale(' + cardScale + ')';
+    cardWrapper.style.opacity = cardOpacity;
+    cardWrapper.style.transform = 'scale(' + cardScale + ')';
     
     var aboutScrollStart = 200;
     var aboutScrollEnd = 500;
@@ -249,7 +232,3 @@ secretInput.addEventListener('keypress', function(e) {
         handleEasterEgg();
     }
 });
-
-console.log('🎯 动画系统已启动');
-console.log('- 鼠标模式：实时跟随');
-console.log('- 陀螺仪模式：触摸屏幕启用（iOS）');
