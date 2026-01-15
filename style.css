@@ -1,90 +1,78 @@
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif; background-color: #ffffff; overflow-x: hidden; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system, BlinkMacSystemFont, "SF Pro Display","Inter",sans-serif; background:#fff; overflow-x:hidden; }
 
-.container { min-height: 300vh; position: relative; width: 100%; }
+.container { min-height:300vh; position:relative; width:100%; }
 
 /* Fireworks */
-.fireworks-container { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; overflow:hidden; }
-.firework-particle { position: absolute; width:6px; height:6px; border-radius:50%; }
+.fireworks-container { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; overflow:hidden; }
+.firework-particle { position:absolute; width:6px; height:6px; border-radius:50%; }
 
 /* Hero Section */
 .hero-section { height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; perspective:1200px; padding:0 20px; }
 
-/* 第1层：scale + opacity（2D变换） */
-.card-scale-wrapper { width:380px; height:240px; transition: opacity 0.3s ease; }
+/* 第1层：scale + opacity */
+.card-scale-wrapper {
+    width:380px; height:240px;
+    transition:opacity 0.3s ease; position:relative;
+}
 
 /* 第2层：翻转 */
 .card-flip-container {
-    width: 100%;
-    height: 100%;
-    transform-style: preserve-3d;
+    width:100%; height:100%;
+    transform-style:preserve-3d;
     cursor:pointer;
-    transition: transform 0.8s cubic-bezier(0.4,0,0.2,1);
+    transition:transform 0.8s cubic-bezier(0.4,0,0.2,1);
 }
 
 /* 第3层：tilt */
 .card-tilt {
-    width:100%;
-    height:100%;
-    transform-style: preserve-3d;
+    width:100%; height:100%;
+    transform-style:preserve-3d;
+    transition:transform 0.1s linear;
 }
 
-/* 卡片正反面 */
 .card-face {
-    position:absolute;
-    width:100%;
-    height:100%;
+    position:absolute; width:100%; height:100%;
     backface-visibility:hidden;
-    background-color:#ffffff;
-    border-radius:20px;
+    background:#fff; border-radius:20px;
     box-shadow:0 8px 30px rgba(0,0,0,0.06),0 2px 8px rgba(0,0,0,0.04);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    transform-style: preserve-3d;
+    display:flex; align-items:center; justify-content:center; transform-style:preserve-3d;
 }
-.card-back { transform: rotateY(180deg); flex-direction:column; padding:40px; }
-
-.card-title { font-size:42px; font-weight:500; letter-spacing:0.03em; color:#000; font-family:"Didot","Bodoni MT","Playfair Display","Cormorant Garamond","Georgia",serif; font-style:italic; }
-.card-tagline { font-size:22px; font-weight:400; color:#000; margin-bottom:8px; text-align:center; font-family:"Didot","Bodoni MT","Playfair Display","Cormorant Garamond","Georgia",serif; font-style:italic; letter-spacing:0.02em; }
+.card-back { transform:rotateY(180deg); flex-direction:column; padding:40px; }
+.card-title { font-size:42px; font-weight:500; font-style:italic; letter-spacing:0.03em; color:#000; font-family:"Didot","Bodoni MT","Playfair Display","Cormorant Garamond","Georgia",serif; }
+.card-tagline { font-size:22px; font-weight:400; margin-bottom:8px; text-align:center; font-style:italic; letter-spacing:0.02em; color:#000; font-family:"Didot","Bodoni MT","Playfair Display","Cormorant Garamond","Georgia",serif; }
 .card-subtitle { font-size:15px; color:#86868b; text-align:center; font-weight:400; }
 
-.contact-button { margin-top:50px; padding:18px 48px; font-size:17px; font-weight:400; color:#1d1d1f; background-color:#fff; border:1px solid #d2d2d7; border-radius:980px; cursor:pointer; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); box-shadow:0 2px 8px rgba(0,0,0,0.04);}
-.contact-button:hover { transform: scale(1.02); box-shadow:0 4px 12px rgba(0,0,0,0.08); background-color:#f5f5f7;}
-.contact-button:active { transform: scale(0.98); }
+/* Buttons */
+.contact-button { margin-top:50px; padding:18px 48px; font-size:17px; font-weight:400; color:#1d1d1f; background:#fff; border:1px solid #d2d2d7; border-radius:980px; cursor:pointer; transition:all 0.3s cubic-bezier(0.4,0,0.2,1); box-shadow:0 2px 8px rgba(0,0,0,0.04);}
+.contact-button:hover { transform:scale(1.02); box-shadow:0 4px 12px rgba(0,0,0,0.08); background:#f5f5f7;}
+.contact-button:active { transform:scale(0.98);}
 
 /* About Section */
 .about-section { min-height:100vh; padding:100px 40px; max-width:680px; margin:0 auto; width:100%; transition:opacity 0.5s ease, transform 0.5s ease; }
 .about-title { font-size:36px; font-weight:600; color:#1d1d1f; margin-bottom:24px; letter-spacing:-0.01em; }
 .about-content { font-size:17px; line-height:1.7; color:#6e6e73; font-weight:400; }
 .about-item { margin-bottom:12px; }
-.divider { width:100%; height:1px; background-color:#e5e5e7; margin:60px 0; }
+.divider { width:100%; height:1px; background:#e5e5e7; margin:60px 0; }
 
 /* Secret Section */
-.secret-section { min-height:100vh; display:flex; align-items:center; justify-content:center; background-color:#fff; padding:40px 20px; position:relative; }
+.secret-section { min-height:100vh; display:flex; align-items:center; justify-content:center; background:#fff; padding:40px 20px; position:relative; }
 .heart-container { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:120px; animation:heartbeat 1s ease-in-out infinite; z-index:100; display:none; }
 .heart-container.show { display:block; }
-@keyframes heartbeat { 0%,100%{transform:translate(-50%,-50%) scale(1);}50%{transform:translate(-50%,-50%) scale(1.2);} }
-.input-group { display:flex; gap:12px; align-items:center; transition: opacity 0.5s ease, transform 0.5s ease; }
-.secret-input { width:320px; padding:16px 24px; font-size:16px; font-weight:400; color:#1d1d1f; background-color:#fff; border:1px solid #d2d2d7; border-radius:12px; outline:none; box-shadow:0 2px 12px rgba(0,0,0,0.04); transition:all 0.3s ease; font-family:-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;}
+@keyframes heartbeat {0%,100%{transform:translate(-50%,-50%) scale(1);}50%{transform:translate(-50%,-50%) scale(1.2);}}
+.input-group { display:flex; gap:12px; align-items:center; transition:opacity 0.5s ease, transform 0.5s ease; }
+.secret-input { width:320px; padding:16px 24px; font-size:16px; font-weight:400; color:#1d1d1f; background:#fff; border:1px solid #d2d2d7; border-radius:12px; outline:none; box-shadow:0 2px 12px rgba(0,0,0,0.04); transition:all 0.3s ease; font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif;}
 .secret-input:focus { box-shadow:0 4px 20px rgba(0,0,0,0.08); border-color:#86868b;}
-.secret-button { padding:16px 36px; font-size:18px; font-weight:400; color:#1d1d1f; background-color:#fff; border:1px solid #d2d2d7; border-radius:12px; cursor:pointer; transition:all 0.3s cubic-bezier(0.4,0,0.2,1); box-shadow:0 2px 12px rgba(0,0,0,0.04);}
-.secret-button:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,0.1); background-color:#f5f5f7;}
-.secret-button:active { transform:translateY(0) scale(0.96); }
+.secret-button { padding:16px 36px; font-size:18px; font-weight:400; color:#1d1d1f; background:#fff; border:1px solid #d2d2d7; border-radius:12px; cursor:pointer; transition:all 0.3s cubic-bezier(0.4,0,0.2,1); box-shadow:0 2px 12px rgba(0,0,0,0.04);}
+.secret-button:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,0.1); background:#f5f5f7;}
+.secret-button:active { transform:translateY(0) scale(0.96);}
 
 /* Mobile */
-@media (max-width:768px){
-  .card-flip-container { width:90vw; max-width:380px; aspect-ratio:19/12; height:auto;}
-  .card-title{font-size:32px;}
-  .card-tagline{font-size:18px;}
-  .card-subtitle{font-size:13px;}
-  .contact-button{margin-top:40px;padding:16px 40px;font-size:15px;}
-  .about-section{padding:60px 24px;}
-  .about-title{font-size:28px;margin-bottom:20px;}
-  .about-content{font-size:15px;}
-  .divider{margin:50px 0;}
-  .heart-container{font-size:80px;}
-  .input-group{flex-direction:column;gap:16px;}
-  .secret-input{width:280px;}
-  .secret-button{padding:16px 32px;}
+@media(max-width:768px){
+    .card-scale-wrapper { width:90vw; max-width:380px; height:calc(90vw*240/380); }
+    .card-title{font-size:32px;} .card-tagline{font-size:18px;} .card-subtitle{font-size:13px;}
+    .contact-button{margin-top:40px; padding:16px 40px; font-size:15px;}
+    .about-section{padding:60px 24px;} .about-title{font-size:28px; margin-bottom:20px;} .about-content{font-size:15px;}
+    .divider{margin:50px 0;} .heart-container{font-size:80px;} .input-group{flex-direction:column; gap:16px;}
+    .secret-input{width:280px;} .secret-button{padding:16px 32px;}
 }
