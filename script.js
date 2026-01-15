@@ -24,6 +24,7 @@ window.addEventListener('mousemove', e=>{
     if(inputMode==='mouse'){ mouseX=e.clientX; mouseY=e.clientY; }
 });
 
+// 陀螺仪权限请求和事件处理
 function handleOrientation(event){
     if(event.beta!==null && event.gamma!==null){
         inputMode='gyro';
@@ -32,15 +33,23 @@ function handleOrientation(event){
     }
 }
 
+// 适配Safari和其他浏览器
 if(typeof DeviceOrientationEvent!=='undefined'){
     if(typeof DeviceOrientationEvent.requestPermission==='function'){
+        // Safari浏览器需要通过点击来请求权限
         document.addEventListener('touchstart', function(){
             DeviceOrientationEvent.requestPermission()
-            .then(res=>{ if(res==='granted'){ window.addEventListener('deviceorientation', handleOrientation,true); }})
+            .then(res=>{ 
+                if(res==='granted'){ 
+                    window.addEventListener('deviceorientation', handleOrientation, true);
+                    console.log('✅ 陀螺仪权限已启用');
+                } 
+            })
             .catch(console.error);
         },{once:true});
     }else{
-        window.addEventListener('deviceorientation', handleOrientation,true);
+        // 其他浏览器直接监听陀螺仪事件
+        window.addEventListener('deviceorientation', handleOrientation, true);
     }
 }
 
