@@ -1,8 +1,8 @@
 // ============================================
 // 1. 纯输入数据
 // ============================================
-var mouseX = 0;
-var mouseY = 0;
+var mouseX = window.innerWidth / 2;
+var mouseY = window.innerHeight / 2;
 var gyroTargetX = 0;
 var gyroTargetY = 0;
 var gyroCurrentX = 0;
@@ -35,28 +35,42 @@ window.addEventListener('mousemove', function(e) {
     inputMode = 'mouse';
 });
 
-// 陀螺仪：切换到 gyro 模式
+// 陀螺仪：持续更新，切换到 gyro 模式
 function handleOrientation(event) {
     if (event.beta !== null && event.gamma !== null) {
+        // 持续更新 target 值
         gyroTargetX = Math.max(-12, Math.min(12, event.beta / 3));
         gyroTargetY = Math.max(-12, Math.min(12, event.gamma / 3));
-        inputMode = 'gyro';
+        
+        // 只要有数据就切换到 gyro 模式
+        if (Math.abs(event.beta) > 0.1 || Math.abs(event.gamma) > 0.1) {
+            inputMode = 'gyro';
+        }
     }
 }
 
+// iOS 权限处理
 if (typeof DeviceOrientationEvent !== 'undefined') {
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-        document.addEventListener('touchstart', function() {
+        // iOS 13+：首次触摸时请求权限
+        document.addEventListener('touchstart', function requestPermission() {
             DeviceOrientationEvent.requestPermission()
                 .then(function(response) {
                     if (response === 'granted') {
                         window.addEventListener('deviceorientation', handleOrientation, true);
+                        console.log('✅ 陀螺仪已启用');
+                    } else {
+                        console.log('❌ 陀螺仪权限被拒绝');
                     }
                 })
-                .catch(console.error);
+                .catch(function(error) {
+                    console.error('陀螺仪权限请求失败:', error);
+                });
         }, { once: true });
     } else {
+        // 非 iOS 设备：直接启用
         window.addEventListener('deviceorientation', handleOrientation, true);
+        console.log('✅ 陀螺仪监听已启动');
     }
 }
 
@@ -111,10 +125,11 @@ function renderLoop() {
 renderLoop();
 
 // ============================================
-// 4. 翻转（只改 cardContainer）
+// 4. 翻转（cardContainer + CSS transition）
 // ============================================
 cardContainer.addEventListener('click', function() {
     flipRotation += 180;
+    // CSS transition 会自动处理动画
     cardContainer.style.transform = 'rotateY(' + flipRotation + 'deg)';
 });
 
@@ -126,8 +141,9 @@ window.addEventListener('scroll', function() {
     
     var cardOpacity = Math.max(0, 1 - scrollY / 400);
     var cardScale = Math.max(0.8, 1 - scrollY / 1000);
+    
+    // 保持翻转状态，叠加 scale
     cardContainer.style.opacity = cardOpacity;
-    // scale 叠加在 rotateY 上
     cardContainer.style.transform = 
         'rotateY(' + flipRotation + 'deg) ' +
         'scale(' + cardScale + ')';
@@ -233,3 +249,7 @@ secretInput.addEventListener('keypress', function(e) {
         handleEasterEgg();
     }
 });
+
+console.log('🎯 动画系统已启动');
+console.log('- 鼠标模式：实时跟随');
+console.log('- 陀螺仪模式：触摸屏幕启用（iOS）');
