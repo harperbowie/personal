@@ -96,6 +96,7 @@ window.addEventListener('load', () => {
     
     // 使用刷新时记录的初始方向（如果有）
     if (initialBeta !== null && initialGamma !== null) {
+        // 重置时将当前方向设置为初始方向
         gyroCurrentX = initialBeta;
         gyroCurrentY = initialGamma;
         cardTilt.style.transform = `rotateX(${gyroCurrentX}deg) rotateY(${gyroCurrentY}deg)`;
@@ -180,9 +181,8 @@ function createFirework() {
         let tx = Math.cos(angle) * distance;
         let ty = Math.sin(angle) * distance;
         particle.style.backgroundColor = `hsl(${hue},100%,60%)`;
-        particle.style.boxShadow = `0 0 15px hsl(${hue},100%,60%)`;
+        particle.style.boxShadow = `0 0 15px hsl(${hue}, 100%, 60%)`;
         fireworksContainer.appendChild(particle);
-
         (function (p, targetX, targetY) {
             let start = null;
             function animateParticle(timestamp) {
