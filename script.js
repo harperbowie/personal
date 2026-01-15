@@ -1,117 +1,112 @@
-// ====================
-// 输入 & 状态
-// ====================
-let mouseX = window.innerWidth / 2;
-let mouseY = window.innerHeight / 2;
+// ==========================
+// Gyro Relative Orientation
+// ==========================
 
-let useGyro = false;
-let angX = 0;  // 累计的角度
-let angY = 0;
-let lastTimestamp = null;
+let card = document.querySelector('.card'); // 你的名片元素
+let enabled = false;
 
-let currentTiltX = 0;
-let currentTiltY = 0;
+// 基准（刷新那一刻的姿态）
+let baseQuat = null;
 
-// DOM
-const cardFlip = document.getElementById('cardFlip');
-const cardTilt = document.getElementById('cardTilt');
-const cardScaleWrapper = document.getElementById('cardScaleWrapper');
-const aboutSection = document.getElementById('aboutSection');
-const inputGroup = document.getElementById('inputGroup');
-const secretInput = document.getElementById('secretInput');
-const secretButton = document.getElementById('secretButton');
-const heartContainer = document.getElementById('heartContainer');
-const fireworksContainer = document.getElementById('fireworksContainer');
+// 当前相对旋转
+let currentQuat = { x: 0, y: 0, z: 0, w: 1 };
 
-// ====================
-// 鼠标
-// ====================
-window.addEventListener('mousemove', e => {
-    mouseX = e.clientX;
-    mouseY = e.clientY;
-});
+// 幅度调节（越大越明显）
+const INTENSITY = 1.8;
 
-// ====================
-// 设备运动（真正陀螺仪）
-// ====================
-function handleMotion(e) {
-    const r = e.rotationRate;
-    if (!r || (r.alpha === null && r.beta === null && r.gamma === null)) return;
-
-    useGyro = true;
-    if (lastTimestamp === null) {
-        lastTimestamp = e.timeStamp;
-        return;
-    }
-    const dt = (e.timeStamp - lastTimestamp) / 1000;
-    lastTimestamp = e.timeStamp;
-
-    // beta -> X 俯仰，gamma -> Y 横滚
-    // 乘以 dt 得到度数
-    angX += (r.beta || 0) * dt;
-    angY += (r.gamma || 0) * dt;
-
-    // 限制范围
-    angX = Math.max(-60, Math.min(60, angX));
-    angY = Math.max(-60, Math.min(60, angY));
+// ---------- Quaternion 工具 ----------
+function degToRad(d) {
+  return d * Math.PI / 180;
 }
 
-// Safari / iOS 需要权限
+function quatFromEuler(alpha, beta, gamma) {
+  // Z-X-Y 顺序（这是浏览器 deviceorientation 正确用法）
+  let _x = degToRad(beta);
+  let _y = degToRad(gamma);
+  let _z = degToRad(alpha);
+
+  let cX = Math.cos(_x / 2);
+  let cY = Math.cos(_y / 2);
+  let cZ = Math.cos(_z / 2);
+  let sX = Math.sin(_x / 2);
+  let sY = Math.sin(_y / 2);
+  let sZ = Math.sin(_z / 2);
+
+  return {
+    x: sX * cY * cZ + cX * sY * sZ,
+    y: cX * sY * cZ - sX * cY * sZ,
+    z: cX * cY * sZ + sX * sY * cZ,
+    w: cX * cY * cZ - sX * sY * sZ
+  };
+}
+
+function quatInvert(q) {
+  return { x: -q.x, y: -q.y, z: -q.z, w: q.w };
+}
+
+function quatMultiply(a, b) {
+  return {
+    w: a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z,
+    x: a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+    y: a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+    z: a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w
+  };
+}
+
+function quatToEuler(q) {
+  return {
+    x: Math.atan2(2 * (q.w * q.x + q.y * q.z), 1 - 2 * (q.x * q.x + q.y * q.y)),
+    y: Math.asin(Math.max(-1, Math.min(1, 2 * (q.w * q.y - q.z * q.x)))),
+    z: Math.atan2(2 * (q.w * q.z + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z))
+  };
+}
+
+// ---------- 核心逻辑 ----------
+function handleOrientation(e) {
+  if (e.alpha === null) return;
+
+  const q = quatFromEuler(e.alpha, e.beta, e.gamma);
+
+  // 第一次读到数据：锁定“刷新时的姿态”为零点
+  if (!baseQuat) {
+    baseQuat = quatInvert(q);
+    return;
+  }
+
+  // 相对旋转 = 基准 × 当前
+  currentQuat = quatMultiply(baseQuat, q);
+
+  const euler = quatToEuler(currentQuat);
+
+  // 放大幅度 + 映射到名片
+  const rx = euler.x * INTENSITY;
+  const ry = euler.y * INTENSITY;
+
+  card.style.transform = `
+    perspective(1000px)
+    rotateX(${rx}rad)
+    rotateY(${ry}rad)
+  `;
+}
+
+// ---------- 权限 ----------
 function enableGyro() {
-    if (typeof DeviceMotionEvent !== 'undefined' &&
-        typeof DeviceMotionEvent.requestPermission === 'function') {
-        document.addEventListener('click', () => {
-            DeviceMotionEvent.requestPermission()
-                .then(res => {
-                    if (res === 'granted') {
-                        window.addEventListener('devicemotion', handleMotion, true);
-                    }
-                }).catch(console.error);
-        }, { once: true });
-    } else {
-        window.addEventListener('devicemotion', handleMotion, true);
-    }
+  if (enabled) return;
+  enabled = true;
+
+  window.addEventListener('deviceorientation', handleOrientation, true);
 }
-enableGyro();
 
-// ====================
-// 渲染循环
-// ====================
-function renderLoop() {
-    let targetX = 0;
-    let targetY = 0;
-
-    if (useGyro) {
-        targetX = angX;
-        targetY = angY;
-    } else {
-        const rect = cardFlip.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        const dx = mouseX - cx;
-        const dy = mouseY - cy;
-
-        targetX = (-dy / (rect.height / 2)) * 6;
-        targetY = (dx / (rect.width / 2)) * 6;
-    }
-
-    currentTiltX += (targetX - currentTiltX) * 0.1;
-    currentTiltY += (targetY - currentTiltY) * 0.1;
-
-    cardTilt.style.transform = `rotateX(${currentTiltX}deg) rotateY(${currentTiltY}deg)`;
-    requestAnimationFrame(renderLoop);
-}
-renderLoop();
-
-// ====================
-// 翻转
-// ====================
-let flipAngle = 0;
-cardFlip.addEventListener('click', () => {
-    flipAngle += 180;
-    cardFlip.style.transform = `rotateY(${flipAngle}deg)`;
-});
-
-// ====================
-// Scroll 和 Easter Egg 保持原样（无需修改）
-// ====================
+// iOS Safari 必须用户手势
+document.body.addEventListener('click', () => {
+  if (
+    typeof DeviceOrientationEvent !== 'undefined' &&
+    typeof DeviceOrientationEvent.requestPermission === 'function'
+  ) {
+    DeviceOrientationEvent.requestPermission().then(res => {
+      if (res === 'granted') enableGyro();
+    });
+  } else {
+    enableGyro();
+  }
+}, { once: true });
