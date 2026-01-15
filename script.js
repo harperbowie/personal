@@ -1,5 +1,5 @@
 // ============================================
-// 1. 纯输入数据
+// 1. 数据层
 // ============================================
 var mouseX = window.innerWidth / 2;
 var mouseY = window.innerHeight / 2;
@@ -10,11 +10,7 @@ var gyroCurrentY = 0;
 var inputMode = 'mouse';
 var flipRotation = 0;
 
-// 手机初始方向
-var initialBeta = null;
-var initialGamma = null;
-
-// DOM 引用（4层结构 + 页面元素）
+// DOM
 var cardScaleWrapper = document.getElementById('cardScaleWrapper');
 var cardFlipContainer = document.getElementById('cardFlipContainer');
 var cardTiltY = document.getElementById('cardTiltY');
@@ -26,15 +22,15 @@ var secretButton = document.getElementById('secretButton');
 var heartContainer = document.getElementById('heartContainer');
 var fireworksContainer = document.getElementById('fireworksContainer');
 
-// 当前 tilt 值
 var currentTiltX = 0;
 var currentTiltY = 0;
 
-// ============================================
-// 2. 输入层
-// ============================================
+// 保存初始旋转补偿
+var initialOrientation = null;
 
-// 鼠标模式
+// ============================================
+// 2. 鼠标输入
+// ============================================
 window.addEventListener('mousemove', function(e) {
     if (inputMode === 'mouse') {
         mouseX = e.clientX;
@@ -42,42 +38,44 @@ window.addEventListener('mousemove', function(e) {
     }
 });
 
-// 陀螺仪处理
+// ============================================
+// 3. 陀螺仪处理
+// ============================================
 function handleOrientation(event) {
-    if (event.beta !== null && event.gamma !== null) {
-        inputMode = 'gyro';
+    if (event.beta === null || event.gamma === null) return;
+    inputMode = 'gyro';
 
-        // 第一次记录初始方向
-        if (initialBeta === null) initialBeta = event.beta;
-        if (initialGamma === null) initialGamma = event.gamma;
-
-        // 相对偏移
-        var relativeBeta = event.beta - initialBeta;
-        var relativeGamma = event.gamma - initialGamma;
-
-        // 增大幅度
-        gyroTargetX = Math.max(-24, Math.min(24, relativeBeta / 2));
-        gyroTargetY = Math.max(-24, Math.min(24, relativeGamma / 2));
+    // 第一次记录初始姿态
+    if (!initialOrientation) {
+        // 将平躺/竖直统一为默认水平正向
+        initialOrientation = {
+            beta: event.beta,
+            gamma: event.gamma
+        };
     }
+
+    // 计算相对偏移
+    var relativeBeta = event.beta - initialOrientation.beta;
+    var relativeGamma = event.gamma - initialOrientation.gamma;
+
+    // 放大幅度，平滑
+    gyroTargetX = Math.max(-24, Math.min(24, relativeBeta / 2));
+    gyroTargetY = Math.max(-24, Math.min(24, relativeGamma / 2));
 }
 
-// Safari 需要点击请求权限
+// Safari 权限处理
 function initGyro() {
     if (typeof DeviceOrientationEvent !== 'undefined') {
         if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-            // iOS 13+
             document.addEventListener('touchstart', function() {
                 DeviceOrientationEvent.requestPermission()
                     .then(function(response) {
                         if (response === 'granted') {
                             window.addEventListener('deviceorientation', handleOrientation, true);
-                            console.log('✅ Safari陀螺仪已启用');
                         }
-                    })
-                    .catch(console.error);
+                    }).catch(console.error);
             }, { once: true });
         } else {
-            // 其他浏览器
             window.addEventListener('deviceorientation', handleOrientation, true);
         }
     }
@@ -85,20 +83,18 @@ function initGyro() {
 initGyro();
 
 // ============================================
-// 3. 唯一 rAF 循环
+// 4. rAF 循环
 // ============================================
 function renderLoop() {
     var targetTiltX = 0;
     var targetTiltY = 0;
 
     if (inputMode === 'gyro') {
-        // 陀螺仪低通滤波
         gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.1;
         gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.1;
         targetTiltX = gyroCurrentX;
         targetTiltY = gyroCurrentY;
     } else {
-        // 鼠标模式，相对 cardFlipContainer 中心
         var rect = cardFlipContainer.getBoundingClientRect();
         var cx = rect.left + rect.width / 2;
         var cy = rect.top + rect.height / 2;
@@ -112,11 +108,9 @@ function renderLoop() {
         targetTiltY = nx * 12;
     }
 
-    // 插值
     currentTiltX += (targetTiltX - currentTiltX) * 0.1;
     currentTiltY += (targetTiltY - currentTiltY) * 0.1;
 
-    // 分层写入
     cardTiltX.style.transform = 'rotateX(' + currentTiltX + 'deg)';
     cardTiltY.style.transform = 'rotateY(' + (currentTiltY + flipRotation) + 'deg)';
 
@@ -125,7 +119,7 @@ function renderLoop() {
 renderLoop();
 
 // ============================================
-// 4. 翻转
+// 5. 翻转
 // ============================================
 cardFlipContainer.addEventListener('click', function() {
     flipRotation += 180;
@@ -133,18 +127,15 @@ cardFlipContainer.addEventListener('click', function() {
 });
 
 // ============================================
-// 5. Scroll（只改 scale/opacity，不碰 rotate）
+// 6. Scroll
 // ============================================
 window.addEventListener('scroll', function() {
     var scrollY = window.scrollY;
-
-    // Card fade + scale
     var cardOpacity = Math.max(0, 1 - scrollY / 400);
     var cardScale = Math.max(0.8, 1 - scrollY / 1000);
     cardScaleWrapper.style.opacity = cardOpacity;
     cardScaleWrapper.style.transform = 'scale(' + cardScale + ')';
 
-    // About fade
     var aboutScrollStart = 200;
     var aboutScrollEnd = 500;
     var aboutFadeOut = 1200;
@@ -153,11 +144,10 @@ window.addEventListener('scroll', function() {
         : Math.max(0, 1 - (scrollY - aboutFadeOut) / 300);
     var aboutTranslateY = scrollY < aboutFadeOut 
         ? Math.max(0, 50 - (scrollY - aboutScrollStart) / 8) 
-        : Math.max(0, -30 + (scrollY - aboutFadeOut) / 10);
+        : Math.max(0, -30 + (scrollY - aboutScrollFadeOut) / 10);
     aboutSection.style.opacity = aboutOpacity;
     aboutSection.style.transform = 'translateY(' + aboutTranslateY + 'px)';
 
-    // Secret fade
     var secretOpacity = Math.min(1, Math.max(0, (scrollY - 1400) / 300));
     var secretTranslateY = Math.max(0, 30 - (scrollY - 1400) / 10);
     inputGroup.style.opacity = secretOpacity;
@@ -165,7 +155,7 @@ window.addEventListener('scroll', function() {
 });
 
 // ============================================
-// 6. Easter Egg
+// 7. Easter Egg
 // ============================================
 function createFirework() {
     var x = Math.random() * window.innerWidth;
@@ -207,9 +197,7 @@ function createFirework() {
 
 function launchFireworks() {
     for (var i = 0; i < 6; i++) {
-        (function(index) {
-            setTimeout(function() { createFirework(); }, index * 150);
-        })(i);
+        (function(index) { setTimeout(function() { createFirework(); }, index * 150); })(i);
     }
 }
 
@@ -229,6 +217,4 @@ function handleEasterEgg() {
 }
 
 secretButton.addEventListener('click', handleEasterEgg);
-secretInput.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') handleEasterEgg();
-});
+secretInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') handleEasterEgg(); });
