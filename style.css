@@ -44,34 +44,38 @@ body {
     justify-content: center;
     position: relative;
     padding: 0 20px;
+    perspective: 1200px;
 }
 
-/* 最外层：scale + opacity */
-.card-wrapper {
+/* 第1层：scale + opacity（2D变换，不参与3D）*/
+.card-scale-wrapper {
     width: 380px;
     height: 240px;
     transition: opacity 0.3s ease;
 }
 
-/* 中层：翻转层（逆时针） */
-.card-container {
+/* 第2层：Y轴翻转（flip，单独一层）*/
+.card-flip-container {
     width: 100%;
     height: 100%;
     position: relative;
     cursor: pointer;
-    perspective: 1200px;
     transform-style: preserve-3d;
-    will-change: transform;
     transition: transform 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
 }
 
-/* 内层：倾斜层 */
-.card-inner {
+/* 第3层：Y轴倾斜（tilt Y）*/
+.card-tilt-y {
     width: 100%;
     height: 100%;
-    position: relative;
     transform-style: preserve-3d;
-    will-change: transform;
+}
+
+/* 第4层：X轴倾斜（tilt X）*/
+.card-tilt-x {
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
 }
 
 .card-face {
@@ -85,15 +89,16 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    transform-style: preserve-3d;
 }
 
 .card-front {
-    /* 正面：默认朝前 */
+    /* 正面：默认 */
 }
 
 .card-back {
-    /* 背面：逆时针 180 度 */
-    transform: rotateY(-180deg);
+    /* 背面：180度（正向）*/
+    transform: rotateY(180deg);
     flex-direction: column;
     padding: 40px;
 }
@@ -268,7 +273,7 @@ body {
 
 /* Mobile */
 @media (max-width: 768px) {
-    .card-wrapper {
+    .card-scale-wrapper {
         width: 90vw;
         max-width: 380px;
         height: 55vw;
