@@ -94,9 +94,8 @@ function renderLoop(){
         const cy=rect.top+rect.height/2;
         const dx=mouseX-cx;
         const dy=mouseY-cy;
-        // 修复方向：X轴倾斜根据Y偏移，Y轴倾斜根据X偏移
-        targetX=-(dy/(rect.height/2))*6;  // 鼠标上移(dy<0)→卡片向上倾斜(+)
-        targetY=(dx/(rect.width/2))*6;   // 鼠标右移(dx>0)→卡片向右倾斜(+)
+        targetX = ((cy - mouseY) / (rect.height / 2)) * 6;
+        targetY = ((mouseX - cx) / (rect.width / 2)) * 6;
     }
 
     currentTiltX += (targetX - currentTiltX)*0.1;
