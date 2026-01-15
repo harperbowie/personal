@@ -112,8 +112,8 @@ function renderLoop() {
         // 所以：
         // - 鼠标在右侧(px>0) → Y轴应该向左 → rotateY正值
         // - 鼠标在左侧(px<0) → Y轴应该向右 → rotateY负值
-        targetX = -py * maxAngle;   // 鼠标在上(py负) → rotateX负值 → 向上旋转
-        targetY = px * maxAngle;    // 鼠标在右(px正) → rotateY正值 → 向左旋转
+       targetX = -py * maxAngle;   // 鼠标在上(py负) → rotateX负值 → 向上旋转
+       targetY = -px * maxAngle;   // 鼠标在右(px正) → rotateY负值 → 向右旋转
     }
 
     currentTiltX += (targetX - currentTiltX) * 0.1;
