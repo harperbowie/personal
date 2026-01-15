@@ -1,10 +1,22 @@
-// 纯输入数据
+// 纯数据（只存数值，不读 DOM）
 var mouseX = window.innerWidth / 2;
 var mouseY = window.innerHeight / 2;
 var gyroX = 0;
 var gyroY = 0;
+var gyroTargetX = 0;
+var gyroTargetY = 0;
 var useGyro = false;
-var cardRotation = 0; // 翻转累计角度
+var cardRotation = 0;
+
+// 缓存的几何信息（只在 resize 时更新）
+var cardGeometry = {
+    left: 0,
+    top: 0,
+    width: 380,
+    height: 240,
+    centerX: 0,
+    centerY: 0
+};
 
 var cardContainer = document.getElementById('cardContainer');
 var cardInner = document.getElementById('cardInner');
@@ -14,6 +26,25 @@ var secretInput = document.getElementById('secretInput');
 var secretButton = document.getElementById('secretButton');
 var heartContainer = document.getElementById('heartContainer');
 var fireworksContainer = document.getElementById('fireworksContainer');
+
+// 初始化和 resize 时更新几何信息
+function updateCardGeometry() {
+    var rect = cardContainer.getBoundingClientRect();
+    cardGeometry.left = rect.left;
+    cardGeometry.top = rect.top;
+    cardGeometry.width = rect.width;
+    cardGeometry.height = rect.height;
+    cardGeometry.centerX = rect.left + rect.width / 2;
+    cardGeometry.centerY = rect.top + rect.height / 2;
+}
+
+updateCardGeometry();
+
+var resizeTimeout;
+window.addEventListener('resize', function() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(updateCardGeometry, 100);
+});
 
 // Scroll handling
 function handleScroll() {
@@ -39,82 +70,83 @@ function handleScroll() {
     var secretTranslateY = Math.max(0, 30 - (scrollY - 1400) / 10);
     inputGroup.style.opacity = secretOpacity;
     inputGroup.style.transform = 'translateY(' + secretTranslateY + 'px)';
+    
+    // scroll 会改变卡片位置，需要更新几何信息
+    updateCardGeometry();
 }
 
 window.addEventListener('scroll', handleScroll);
 
-// 输入1: 鼠标位置（持续更新）
+// 输入1: 鼠标（只存数值）
 window.addEventListener('mousemove', function(e) {
     mouseX = e.clientX;
     mouseY = e.clientY;
 });
 
-// 输入2: 陀螺仪（持续更新）
+// 输入2: 陀螺仪 + 低通滤波
 function handleOrientation(event) {
     if (event.beta !== null && event.gamma !== null) {
         useGyro = true;
-        gyroX = Math.max(-25, Math.min(25, event.beta / 2));
-        gyroY = Math.max(-25, Math.min(25, event.gamma / 2));
+        // 存储目标值，在 rAF 中插值
+        gyroTargetX = Math.max(-25, Math.min(25, event.beta / 2));
+        gyroTargetY = Math.max(-25, Math.min(25, event.gamma / 2));
     }
 }
 
-// 尝试启动陀螺仪
 if (typeof DeviceOrientationEvent !== 'undefined') {
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-        // iOS 13+
         document.addEventListener('touchstart', function() {
             DeviceOrientationEvent.requestPermission()
                 .then(function(response) {
                     if (response === 'granted') {
                         window.addEventListener('deviceorientation', handleOrientation, true);
-                        console.log('陀螺仪已启用');
+                        console.log('✅ 陀螺仪已启用');
                     }
                 })
                 .catch(console.error);
         }, { once: true });
     } else {
-        // 其他设备
         window.addEventListener('deviceorientation', handleOrientation, true);
     }
 }
 
-// 核心：每一帧重新计算 transform
+// 纯数学计算 transform（无 DOM 读取）
 function renderLoop() {
     var tiltX = 0;
     var tiltY = 0;
     
-    // 优先使用陀螺仪
-    if (useGyro && (Math.abs(gyroX) > 0.1 || Math.abs(gyroY) > 0.1)) {
+    if (useGyro && (Math.abs(gyroTargetX) > 0.1 || Math.abs(gyroTargetY) > 0.1)) {
+        // 低通滤波：平滑陀螺仪数据
+        var smoothFactor = 0.15;
+        gyroX += (gyroTargetX - gyroX) * smoothFactor;
+        gyroY += (gyroTargetY - gyroY) * smoothFactor;
+        
         tiltX = gyroX;
         tiltY = gyroY;
     } else {
-        // 否则用鼠标
-        var rect = cardContainer.getBoundingClientRect();
-        var cardCenterX = rect.left + rect.width / 2;
-        var cardCenterY = rect.top + rect.height / 2;
+        // 鼠标模式：使用缓存的几何信息
+        var deltaX = mouseX - cardGeometry.centerX;
+        var deltaY = mouseY - cardGeometry.centerY;
         
-        var deltaX = mouseX - cardCenterX;
-        var deltaY = mouseY - cardCenterY;
-        
-        // 检查鼠标是否在名片内
+        // 判断是否在名片内（纯数学，无 DOM 读取）
         var isInside = (
-            mouseX >= rect.left && 
-            mouseX <= rect.right && 
-            mouseY >= rect.top && 
-            mouseY <= rect.bottom
+            mouseX >= cardGeometry.left && 
+            mouseX <= cardGeometry.left + cardGeometry.width && 
+            mouseY >= cardGeometry.top && 
+            mouseY <= cardGeometry.top + cardGeometry.height
         );
         
         if (isInside) {
-            // 在名片上：最大15度
-            var relativeX = mouseX - rect.left;
-            var relativeY = mouseY - rect.top;
-            var centerX = rect.width / 2;
-            var centerY = rect.height / 2;
+            // 在名片上
+            var relativeX = mouseX - cardGeometry.left;
+            var relativeY = mouseY - cardGeometry.top;
+            var centerX = cardGeometry.width / 2;
+            var centerY = cardGeometry.height / 2;
             
             tiltX = -((relativeY - centerY) / centerY) * 15;
             tiltY = ((relativeX - centerX) / centerX) * 15;
         } else {
-            // 不在名片上：距离影响
+            // 不在名片上
             var distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
             var maxDistance = 1000;
             var influence = Math.max(0, 1 - (distance / maxDistance));
@@ -125,18 +157,18 @@ function renderLoop() {
         }
     }
     
-    // 直接应用 transform，包含翻转角度
+    // 只写入 transform，无任何读取
     cardInner.style.transform = 'rotateX(' + tiltX + 'deg) rotateY(' + (tiltY + cardRotation) + 'deg)';
     
     requestAnimationFrame(renderLoop);
 }
 
-// 启动渲染循环
 renderLoop();
 
-// 点击翻转：只改变 cardRotation 数值
+// 点击翻转
 cardContainer.addEventListener('click', function() {
     cardRotation += 180;
+    updateCardGeometry(); // 翻转可能改变视觉位置
 });
 
 // Fireworks
@@ -221,4 +253,7 @@ secretInput.addEventListener('keypress', function(e) {
     }
 });
 
-console.log('动画循环已启动 - 名片会持续响应输入');
+console.log('✅ 优化的动画循环已启动');
+console.log('- 几何信息缓存：只在 resize/scroll 时更新');
+console.log('- rAF 中：纯数学计算 + transform 写入');
+console.log('- 陀螺仪：低通滤波 + 插值');
