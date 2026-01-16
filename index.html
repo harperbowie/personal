@@ -1,73 +1,637 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Harper Bowie</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harper Bowie</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/eruda/3.0.1/eruda.min.js"></script>
+  <script>eruda.init();</script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: white;
+      overflow-x: hidden;
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      perspective: 1000px;
+    }
+
+    /* Card Container */
+    .card-container {
+      width: 350px;
+      height: 200px;
+      position: relative;
+      transition: transform 0.1s ease-out;
+      transform-style: preserve-3d;
+      margin-bottom: 40px;
+    }
+
+    .card {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      transform-style: preserve-3d;
+      transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+
+    .card-face {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      backface-visibility: hidden;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+    }
+
+    .card-front {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-style: italic;
+      font-size: 32px;
+      color: #1a1a1a;
+      text-align: center;
+      text-shadow: 
+        0 1px 0 rgba(255,255,255,0.3),
+        0 -1px 0 rgba(0,0,0,0.15),
+        0 2px 3px rgba(0,0,0,0.1);
+      letter-spacing: 0.5px;
+    }
+
+    .card-back {
+      transform: rotateY(180deg);
+      flex-direction: column;
+      gap: 10px;
+      padding: 25px;
+    }
+
+    .card-back-line1 {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-style: italic;
+      font-size: 18px;
+      color: #1a1a1a;
+      text-align: center;
+      text-shadow: 
+        0 1px 0 rgba(255,255,255,0.3),
+        0 -1px 0 rgba(0,0,0,0.15),
+        0 2px 3px rgba(0,0,0,0.1);
+      letter-spacing: 0.3px;
+    }
+
+    .card-back-line2 {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-style: italic;
+      font-size: 18px;
+      color: #666;
+      text-align: center;
+      text-shadow: 
+        0 1px 0 rgba(255,255,255,0.25),
+        0 -1px 0 rgba(0,0,0,0.1),
+        0 1px 2px rgba(0,0,0,0.08);
+      letter-spacing: 0.3px;
+    }
+
+    .card-back-line3 {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-style: italic;
+      font-size: 13px;
+      color: #888;
+      text-align: center;
+      text-shadow: 
+        0 1px 0 rgba(255,255,255,0.2),
+        0 -1px 0 rgba(0,0,0,0.08),
+        0 1px 2px rgba(0,0,0,0.06);
+      letter-spacing: 0.2px;
+      margin-top: 6px;
+    }
+
+    /* Contact Button */
+    .contact-btn {
+      padding: 12px 32px;
+      background: white;
+      color: black;
+      border: none;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .contact-btn:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      transform: translateY(-1px);
+    }
+
+    .contact-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    /* About Section */
+    .about {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .about h2 {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-style: italic;
+      font-size: 36px;
+      margin-bottom: 60px;
+    }
+
+    .about-content {
+      max-width: 700px;
+      width: 100%;
+    }
+
+    .about-list {
+      margin-bottom: 50px;
+    }
+
+    .about-list div {
+      font-size: 16px;
+      line-height: 1.8;
+      margin-bottom: 12px;
+      color: #1d1d1f;
+    }
+
+    /* Secret Section */
+    .secret {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .secret-input-container {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .secret-input {
+      padding: 14px 20px;
+      border: 1px solid #d2d2d7;
+      border-radius: 12px;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.2s ease;
+      width: 250px;
+    }
+
+    .secret-input:focus {
+      border-color: #000;
+    }
+
+    .secret-btn {
+      width: 48px;
+      height: 48px;
+      border: none;
+      border-radius: 12px;
+      background: black;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .secret-btn:hover {
+      background: #333;
+    }
+
+    .secret-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* Easter Egg */
+    .easter-egg {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 100px;
+      z-index: 1000;
+      pointer-events: none;
+      animation: heartbeat 0.6s ease-in-out infinite;
+    }
+
+    @keyframes heartbeat {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.2); }
+    }
+
+    .firework {
+      position: fixed;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    @media (max-width: 768px) {
+      .card-container {
+        width: 300px;
+        height: 170px;
+      }
+
+      .card-front {
+        font-size: 26px;
+      }
+
+      .card-back-line1,
+      .card-back-line2 {
+        font-size: 16px;
+      }
+
+      .about h2 {
+        font-size: 28px;
+      }
+
+      .about-list div {
+        font-size: 14px;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Fireworks Container -->
-        <div class="fireworks-container" id="fireworksContainer"></div>
 
-        <!-- Hero Section -->
-        <div class="hero-section">
-            <!-- 第1层：scale + opacity（不影响 3D）-->
-            <div class="card-scale-wrapper" id="cardScaleWrapper">
-                <!-- 第2层：Y轴翻转（flip）-->
-                <div class="card-flip-container" id="cardFlipContainer">
-                    <!-- 第3层：Y轴倾斜（tilt Y）-->
-                    <div class="card-tilt-y" id="cardTiltY">
-                        <!-- 第4层：X轴倾斜（tilt X）-->
-                        <div class="card-tilt-x" id="cardTiltX">
-                            <!-- 正面 -->
-                            <div class="card-face card-front">
-                                <h1 class="card-title">Harper Bowie</h1>
-                            </div>
-                            <!-- 背面 -->
-                            <div class="card-face card-back">
-                                <div class="card-tagline">Curious about what's next.</div>
-                                <div class="card-subtitle">Learning by doing.</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <button class="contact-button" onclick="window.location.href='mailto:harper.ops.work@gmail.com'">
-                harper.ops.work@gmail.com
-            </button>
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="card-container" id="cardContainer">
+      <div class="card" id="card">
+        <div class="card-face card-front">
+          Harper Bowie
         </div>
-
-        <!-- About Section -->
-        <div class="about-section" id="aboutSection">
-            <h2 class="about-title">Harper Bowie</h2>
-            <div class="about-content">
-                <div class="about-item">• 独立搭建并维护海外服务器与私人独享节点</div>
-                <div class="about-item">• 理解网络与基础设施的真实工作方式</div>
-                <div class="about-item">• 持续关注并参与 Web3 与去中心化生态</div>
-            </div>
-
-            <div class="divider"></div>
-
-            <div class="about-content">
-                <div class="about-item">• Independently build and maintain overseas servers and a private dedicated node</div>
-                <div class="about-item">• Understand how networks and infrastructure actually work</div>
-                <div class="about-item">• Actively following and participating in Web3 and decentralized ecosystems</div>
-            </div>
+        <div class="card-face card-back">
+          <div class="card-back-line1">Curious about what's next.</div>
+          <div class="card-back-line2">Learning by doing.</div>
+          <div class="card-back-line3">harper.ops.work@gmail.com</div>
         </div>
-
-        <!-- Secret Section -->
-        <div class="secret-section">
-            <div class="heart-container" id="heartContainer">❤️</div>
-            <div class="input-group" id="inputGroup">
-                <input type="text" class="secret-input" id="secretInput" placeholder="Type something..." />
-                <button class="secret-button" id="secretButton">➤</button>
-            </div>
-        </div>
+      </div>
     </div>
+    <a href="mailto:harper.ops.work@gmail.com" class="contact-btn" id="contactBtn">Contact Me</a>
+  </section>
 
-    <script src="script.js"></script>
+  <!-- About Section -->
+  <section class="about" id="about">
+    <h2>Harper Bowie</h2>
+    <div class="about-content">
+      <div class="about-list">
+        <div>• 独立搭建并维护海外服务器与私人独享节点</div>
+        <div>• 理解网络与基础设施的真实工作方式</div>
+        <div>• 持续关注并参与 Web3 与去中心化生态</div>
+      </div>
+      <div class="about-list">
+        <div>• Independently build and maintain overseas servers and a private dedicated node</div>
+        <div>• Understand how networks and infrastructure actually work</div>
+        <div>• Actively following and participating in Web3 and decentralized ecosystems</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Secret Section -->
+  <section class="secret" id="secret">
+    <div class="secret-input-container">
+      <input type="text" class="secret-input" id="secretInput" placeholder="Type something...">
+      <button class="secret-btn" id="secretBtn">➤</button>
+    </div>
+  </section>
+
+  <script>
+    const cardContainer = document.getElementById('cardContainer');
+    const card = document.getElementById('card');
+    const contactBtn = document.getElementById('contactBtn');
+    const aboutSection = document.getElementById('about');
+    const secretSection = document.getElementById('secret');
+    const secretInput = document.getElementById('secretInput');
+    const secretBtn = document.getElementById('secretBtn');
+
+    let flipCount = 0;
+    let currentRotation = { x: 0, y: 0 };
+    let targetRotation = { x: 0, y: 0 };
+    let initialOrientation = null;
+
+    // Flip card on click
+    card.addEventListener('click', () => {
+      flipCount++;
+      card.style.transform = `rotateY(${flipCount * 180}deg)`;
+    });
+
+    // Mouse 3D interaction (Desktop)
+    document.addEventListener('mousemove', (e) => {
+      if (window.innerWidth < 768) return;
+
+      const rect = cardContainer.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      const deltaX = e.clientX - centerX;
+      const deltaY = e.clientY - centerY;
+
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      const maxDistance = 400;
+      const intensity = Math.max(0, 1 - distance / maxDistance);
+
+      targetRotation.y = (deltaX / rect.width) * 20 * intensity;
+      targetRotation.x = -(deltaY / rect.height) * 20 * intensity;
+    });
+
+    // Gyroscope (Mobile)
+    let permissionGranted = false;
+    let orientationStarted = false;
+
+    const handleOrientation = (e) => {
+      if (window.innerWidth >= 768) return;
+
+      console.log('Orientation event:', e.beta, e.gamma, e.alpha); // Debug
+
+      if (!initialOrientation && e.beta !== null && e.gamma !== null) {
+        initialOrientation = { beta: e.beta, gamma: e.gamma };
+        console.log('✅ Initial orientation set:', initialOrientation); // Debug
+        return;
+      }
+
+      if (!initialOrientation || e.beta === null || e.gamma === null) return;
+
+      const deltaGamma = e.gamma - initialOrientation.gamma;
+      const deltaBeta = e.beta - initialOrientation.beta;
+
+      console.log('📊 Delta:', deltaGamma, deltaBeta); // Debug
+
+      // Much higher multiplier for obvious effect
+      targetRotation.y = deltaGamma * 2.5;
+      targetRotation.x = deltaBeta * 2.5;
+    };
+
+    const startOrientation = () => {
+      if (orientationStarted) return;
+      orientationStarted = true;
+      
+      // Try multiple event types for compatibility
+      window.addEventListener('deviceorientation', handleOrientation, true);
+      window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+      console.log('✅ Orientation listeners added (both types)'); // Debug
+      
+      // Test if events are supported
+      setTimeout(() => {
+        if (!initialOrientation) {
+          console.log('⚠️ No orientation data after 1s'); // Debug
+          console.log('DeviceOrientationEvent exists:', typeof DeviceOrientationEvent !== 'undefined');
+          console.log('Window protocol:', window.location.protocol);
+          console.log('Browser:', navigator.userAgent);
+        } else {
+          console.log('🎉 Gyroscope working!');
+        }
+      }, 1000);
+    };
+
+    const requestPermission = () => {
+      if (typeof DeviceOrientationEvent !== 'undefined' && 
+          typeof DeviceOrientationEvent.requestPermission === 'function') {
+        // iOS 13+
+        DeviceOrientationEvent.requestPermission()
+          .then(response => {
+            console.log('📱 Permission response:', response); // Debug
+            if (response === 'granted') {
+              startOrientation();
+            }
+          })
+          .catch(err => console.error('❌ Permission error:', err));
+      } else {
+        // Android and older browsers
+        console.log('🤖 No permission needed, starting orientation'); // Debug
+        startOrientation();
+      }
+    };
+
+    // Mobile detection and initialization
+    if (window.innerWidth < 768) {
+      if (typeof DeviceOrientationEvent !== 'undefined' && 
+          typeof DeviceOrientationEvent.requestPermission === 'function') {
+        // iOS - wait for user interaction
+        console.log('🍎 iOS detected, waiting for touch'); // Debug
+        document.addEventListener('touchstart', () => {
+          console.log('👆 Touch detected, requesting permission'); // Debug
+          requestPermission();
+        }, { once: true });
+      } else {
+        // Android - auto start
+        console.log('🤖 Android detected, auto-starting'); // Debug
+        requestPermission();
+      }
+    }
+
+    // Smooth rotation animation
+    function animateRotation() {
+      currentRotation.x += (targetRotation.x - currentRotation.x) * 0.1;
+      currentRotation.y += (targetRotation.y - currentRotation.y) * 0.1;
+
+      cardContainer.style.transform = `rotateX(${currentRotation.x}deg) rotateY(${currentRotation.y}deg)`;
+      requestAnimationFrame(animateRotation);
+    }
+    animateRotation();
+
+    // Scroll effects
+    window.addEventListener('scroll', () => {
+      const scrollY = window.scrollY;
+      const windowHeight = window.innerHeight;
+
+      // Hero section - Apple-style for card and button separately
+      const heroProgress = Math.min(1, scrollY / (windowHeight * 0.8));
+      const heroFinalOpacity = Math.max(0, 1 - heroProgress);
+      const heroFinalScale = Math.max(0.85, 1 - heroProgress * 0.15);
+      const heroFinalY = heroProgress * 30;
+      
+      // Apply to card
+      cardContainer.style.opacity = heroFinalOpacity;
+      cardContainer.style.filter = `blur(${heroProgress * 3}px)`;
+      
+      // Apply to button
+      contactBtn.style.opacity = heroFinalOpacity;
+      contactBtn.style.transform = `translateY(${heroFinalY}px) scale(${heroFinalScale})`;
+      contactBtn.style.filter = `blur(${heroProgress * 3}px)`;
+
+      // About section - Apple-style reveal: small->big, blur->clear, down->up
+      const aboutTop = aboutSection.getBoundingClientRect().top;
+      const aboutBottom = aboutSection.getBoundingClientRect().bottom;
+      
+      let aboutOpacity = 0;
+      let aboutScale = 0.92;
+      let aboutY = 40;
+      
+      if (aboutTop < windowHeight * 0.85) {
+        // Entering viewport from bottom
+        const enterProgress = Math.min(1, (windowHeight * 0.85 - aboutTop) / 400);
+        aboutOpacity = enterProgress;
+        aboutScale = 0.92 + (0.08 * enterProgress);
+        aboutY = 40 * (1 - enterProgress);
+      } else if (aboutTop >= windowHeight * 0.85) {
+        // Not yet in viewport
+        aboutOpacity = 0;
+        aboutScale = 0.92;
+        aboutY = 40;
+      }
+      
+      if (aboutBottom < windowHeight * 0.15) {
+        // Leaving viewport from top
+        const exitProgress = Math.max(0, aboutBottom / (windowHeight * 0.15));
+        aboutOpacity = exitProgress;
+        aboutScale = 0.92 + (0.08 * exitProgress);
+        aboutY = -20 * (1 - exitProgress);
+      }
+      
+      aboutSection.style.opacity = aboutOpacity;
+      aboutSection.style.transform = `translateY(${aboutY}px) scale(${aboutScale})`;
+
+      // Secret section - Apple-style reveal: small->big, blur->clear, down->up
+      const secretTop = secretSection.getBoundingClientRect().top;
+      const secretBottom = secretSection.getBoundingClientRect().bottom;
+      
+      let secretOpacity = 0;
+      let secretScale = 0.92;
+      let secretY = 40;
+      
+      if (secretTop < windowHeight * 0.85) {
+        const enterProgress = Math.min(1, (windowHeight * 0.85 - secretTop) / 400);
+        secretOpacity = enterProgress;
+        secretScale = 0.92 + (0.08 * enterProgress);
+        secretY = 40 * (1 - enterProgress);
+      } else if (secretTop >= windowHeight * 0.85) {
+        secretOpacity = 0;
+        secretScale = 0.92;
+        secretY = 40;
+      }
+      
+      if (secretBottom < windowHeight * 0.15) {
+        const exitProgress = Math.max(0, secretBottom / (windowHeight * 0.15));
+        secretOpacity = exitProgress;
+        secretScale = 0.92 + (0.08 * exitProgress);
+        secretY = -20 * (1 - exitProgress);
+      }
+      
+      secretSection.style.opacity = secretOpacity;
+      secretSection.style.transform = `translateY(${secretY}px) scale(${secretScale})`;
+    });
+    
+    // Trigger scroll event on load to set initial states
+    window.dispatchEvent(new Event('scroll'));
+
+    // Easter egg
+    function checkSecret() {
+      if (secretInput.value.toLowerCase().trim() === 'sherman') {
+        triggerEasterEgg();
+        secretInput.value = '';
+      }
+    }
+
+    secretBtn.addEventListener('click', checkSecret);
+    secretInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        checkSecret();
+      }
+    });
+
+    function triggerEasterEgg() {
+      // Heart
+      const heart = document.createElement('div');
+      heart.className = 'easter-egg';
+      heart.textContent = '❤️';
+      document.body.appendChild(heart);
+
+      // Fireworks
+      for (let i = 0; i < 50; i++) {
+        setTimeout(() => {
+          createFirework();
+        }, i * 60);
+      }
+
+      // Remove after 3 seconds
+      setTimeout(() => {
+        heart.remove();
+      }, 3000);
+    }
+
+    function createFirework() {
+      const colors = ['#ff0000', '#ff6b6b', '#ff8787', '#ffa5a5', '#ffc9c9'];
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+
+      for (let i = 0; i < 30; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'firework';
+        particle.style.left = centerX + 'px';
+        particle.style.top = centerY + 'px';
+        particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+        document.body.appendChild(particle);
+
+        const angle = (Math.PI * 2 * i) / 30;
+        const velocity = 2 + Math.random() * 3;
+        const vx = Math.cos(angle) * velocity;
+        const vy = Math.sin(angle) * velocity;
+
+        let x = centerX;
+        let y = centerY;
+        let opacity = 1;
+
+        function animateParticle() {
+          x += vx;
+          y += vy;
+          opacity -= 0.02;
+
+          particle.style.left = x + 'px';
+          particle.style.top = y + 'px';
+          particle.style.opacity = opacity;
+
+          if (opacity > 0) {
+            requestAnimationFrame(animateParticle);
+          } else {
+            particle.remove();
+          }
+        }
+
+        animateParticle();
+      }
+    }
+  </script>
+
 </body>
 </html>
