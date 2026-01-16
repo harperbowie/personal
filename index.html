@@ -355,7 +355,7 @@
 <body>
 
   <!-- Version Indicator -->
-  <div class="version">v1.0.8</div>
+  <div class="version">v1.0.9-debug</div>
 
   <!-- Hero Section -->
   <section class="hero">
@@ -478,8 +478,15 @@
 
       // 限制旋转角度范围，防止翻转
       const maxRotation = 25;
-      targetRotation.y = Math.max(-maxRotation, Math.min(maxRotation, deltaGamma * 0.8));
-      targetRotation.x = Math.max(-maxRotation, Math.min(maxRotation, -deltaBeta * 0.8)); // 上下反转
+      const rawY = deltaGamma * 0.8;
+      const rawX = -deltaBeta * 0.8;
+      targetRotation.y = Math.max(-maxRotation, Math.min(maxRotation, rawY));
+      targetRotation.x = Math.max(-maxRotation, Math.min(maxRotation, rawX));
+      
+      // 调试信息
+      if (Math.abs(rawX) > 5 || Math.abs(rawY) > 5) {
+        console.log('📱 Raw:', 'X:', rawX.toFixed(1), 'Y:', rawY.toFixed(1), '| Target:', 'X:', targetRotation.x.toFixed(1), 'Y:', targetRotation.y.toFixed(1));
+      }
     };
     // 修复区域结束
 
