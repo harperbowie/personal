@@ -369,8 +369,12 @@
       const maxDistance = 400;
       const intensity = Math.max(0, 1 - distance / maxDistance);
 
-      targetRotation.y = (deltaX / rect.width) * 20 * intensity;
-      targetRotation.x = -(deltaY / rect.height) * 20 * intensity;
+      const maxRotation = 25; // Maximum rotation angle
+      const rotationY = (deltaX / rect.width) * 20 * intensity;
+      const rotationX = -(deltaY / rect.height) * 20 * intensity;
+      
+      targetRotation.y = Math.max(-maxRotation, Math.min(maxRotation, rotationY));
+      targetRotation.x = Math.max(-maxRotation, Math.min(maxRotation, rotationX));
     });
 
     // Gyroscope (Mobile)
@@ -422,10 +426,18 @@
     if (window.innerWidth < 768) {
       if (typeof DeviceOrientationEvent !== 'undefined' && 
           typeof DeviceOrientationEvent.requestPermission === 'function') {
-        document.addEventListener('touchstart', () => {
+        // iOS Safari - requires user interaction
+        const btn = document.createElement('button');
+        btn.textContent = 'Enable Gyroscope';
+        btn.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;padding:12px 24px;background:#007AFF;color:white;border:none;border-radius:8px;font-size:16px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,0.2);';
+        document.body.appendChild(btn);
+        
+        btn.addEventListener('click', () => {
           requestPermission();
-        }, { once: true });
+          btn.remove();
+        });
       } else {
+        // Android - auto start
         requestPermission();
       }
     }
