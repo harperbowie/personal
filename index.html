@@ -411,13 +411,11 @@
 
       const deltaGamma = e.gamma - initialOrientation.gamma;
       const deltaBeta = e.beta - initialOrientation.beta;
-      const isFlipped = flipCount % 2 === 1;
+
+      // Much higher multiplier for obvious effect
+      targetRotation.y = deltaGamma * 2.5;
       targetRotation.x = deltaBeta * 2.5;
-    if (!isFlipped) {
-  targetRotation.y = deltaGamma * 2.5;
-} else {
-  targetRotation.y = 0;
-}
+    };
 
     const startOrientation = () => {
       if (orientationStarted) return;
