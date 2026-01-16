@@ -355,7 +355,7 @@
 <body>
 
   <!-- Version Indicator -->
-  <div class="version">v1.0.6</div>
+  <div class="version">v1.0.7</div>
 
   <!-- Hero Section -->
   <section class="hero">
@@ -412,6 +412,7 @@
     let currentRotation = { x: 0, y: 0 };
     let targetRotation = { x: 0, y: 0 };
     let initialOrientation = null;
+    let orientationCalibrated = false; // 添加校准标志
 
     // Flip card on click
     card.addEventListener('click', () => {
@@ -449,14 +450,28 @@
     const handleOrientation = (e) => {
       if (window.innerWidth >= 768) return;
 
-      // 第一次接收到有效数据时，将其作为初始零点
-      if (!initialOrientation && e.beta !== null && e.gamma !== null) {
-        initialOrientation = { beta: e.beta, gamma: e.gamma };
-        console.log('🎯 Initial orientation set:', initialOrientation);
+      // 第一次接收到有效数据时，将其作为初始零点，并等待几帧稳定
+      if (!orientationCalibrated && e.beta !== null && e.gamma !== null) {
+        // 等待数据稳定后再设置零点
+        if (!initialOrientation) {
+          initialOrientation = { beta: e.beta, gamma: e.gamma, count: 0 };
+          console.log('🎯 Calibrating orientation...');
+          return;
+        }
+        
+        // 收集几次数据确保稳定
+        if (initialOrientation.count < 3) {
+          initialOrientation.count++;
+          return;
+        }
+        
+        // 校准完成
+        orientationCalibrated = true;
+        console.log('✅ Orientation calibrated:', initialOrientation);
         return;
       }
 
-      if (!initialOrientation || e.beta === null || e.gamma === null) return;
+      if (!orientationCalibrated || e.beta === null || e.gamma === null) return;
 
       const deltaGamma = e.gamma - initialOrientation.gamma;
       const deltaBeta = e.beta - initialOrientation.beta;
@@ -472,9 +487,15 @@
       if (orientationStarted) return;
       orientationStarted = true;
       
+      // 重置所有状态
+      initialOrientation = null;
+      orientationCalibrated = false;
+      currentRotation = { x: 0, y: 0 };
+      targetRotation = { x: 0, y: 0 };
+      
       window.addEventListener('deviceorientation', handleOrientation, true);
       window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-      console.log('✅ Listeners added - v1.0.6');
+      console.log('✅ Listeners added - v1.0.7');
     };
 
     const requestPermission = () => {
