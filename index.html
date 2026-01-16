@@ -4,7 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Harper Bowie</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/eruda/3.0.1/eruda.min.js"></script>
+  <script>eruda.init();</script>
   <style>
+    /* Version indicator */
+    .version {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      z-index: 10000;
+      font-family: monospace;
+    }
     * {
       margin: 0;
       padding: 0;
@@ -292,6 +307,9 @@
 </head>
 <body>
 
+  <!-- Version Indicator -->
+  <div class="version">v1.0.3</div>
+
   <!-- Hero Section -->
   <section class="hero">
     <div class="card-container" id="cardContainer">
@@ -405,6 +423,7 @@
       
       window.addEventListener('deviceorientation', handleOrientation, true);
       window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+      console.log('✅ Listeners added - v1.0.3');
     };
 
     const requestPermission = () => {
@@ -446,6 +465,8 @@
     function animateRotation() {
       currentRotation.x += (targetRotation.x - currentRotation.x) * 0.1;
       currentRotation.y += (targetRotation.y - currentRotation.y) * 0.1;
+
+      console.log('🎬 Current rotation:', 'X:', currentRotation.x.toFixed(1), 'Y:', currentRotation.y.toFixed(1));
 
       cardContainer.style.transform = `rotateX(${currentRotation.x}deg) rotateY(${currentRotation.y}deg)`;
       requestAnimationFrame(animateRotation);
