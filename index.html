@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Harper Bowie</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/eruda/3.0.1/eruda.min.js"></script>
-  <script>eruda.init();</script>
   <style>
     * {
       margin: 0;
@@ -382,11 +380,8 @@
     const handleOrientation = (e) => {
       if (window.innerWidth >= 768) return;
 
-      console.log('Orientation event:', e.beta, e.gamma, e.alpha); // Debug
-
       if (!initialOrientation && e.beta !== null && e.gamma !== null) {
         initialOrientation = { beta: e.beta, gamma: e.gamma };
-        console.log('✅ Initial orientation set:', initialOrientation); // Debug
         return;
       }
 
@@ -394,8 +389,6 @@
 
       const deltaGamma = e.gamma - initialOrientation.gamma;
       const deltaBeta = e.beta - initialOrientation.beta;
-
-      console.log('📊 Delta:', deltaGamma, deltaBeta); // Debug
 
       // Much higher multiplier for obvious effect
       targetRotation.y = deltaGamma * 2.5;
@@ -406,39 +399,21 @@
       if (orientationStarted) return;
       orientationStarted = true;
       
-      // Try multiple event types for compatibility
       window.addEventListener('deviceorientation', handleOrientation, true);
       window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-      console.log('✅ Orientation listeners added (both types)'); // Debug
-      
-      // Test if events are supported
-      setTimeout(() => {
-        if (!initialOrientation) {
-          console.log('⚠️ No orientation data after 1s'); // Debug
-          console.log('DeviceOrientationEvent exists:', typeof DeviceOrientationEvent !== 'undefined');
-          console.log('Window protocol:', window.location.protocol);
-          console.log('Browser:', navigator.userAgent);
-        } else {
-          console.log('🎉 Gyroscope working!');
-        }
-      }, 1000);
     };
 
     const requestPermission = () => {
       if (typeof DeviceOrientationEvent !== 'undefined' && 
           typeof DeviceOrientationEvent.requestPermission === 'function') {
-        // iOS 13+
         DeviceOrientationEvent.requestPermission()
           .then(response => {
-            console.log('📱 Permission response:', response); // Debug
             if (response === 'granted') {
               startOrientation();
             }
           })
-          .catch(err => console.error('❌ Permission error:', err));
+          .catch(console.error);
       } else {
-        // Android and older browsers
-        console.log('🤖 No permission needed, starting orientation'); // Debug
         startOrientation();
       }
     };
@@ -447,15 +422,10 @@
     if (window.innerWidth < 768) {
       if (typeof DeviceOrientationEvent !== 'undefined' && 
           typeof DeviceOrientationEvent.requestPermission === 'function') {
-        // iOS - wait for user interaction
-        console.log('🍎 iOS detected, waiting for touch'); // Debug
         document.addEventListener('touchstart', () => {
-          console.log('👆 Touch detected, requesting permission'); // Debug
           requestPermission();
         }, { once: true });
       } else {
-        // Android - auto start
-        console.log('🤖 Android detected, auto-starting'); // Debug
         requestPermission();
       }
     }
