@@ -355,7 +355,7 @@
 <body>
 
   <!-- Version Indicator -->
-  <div class="version">v1.0.5</div>
+  <div class="version">v1.0.6</div>
 
   <!-- Hero Section -->
   <section class="hero">
@@ -464,7 +464,7 @@
       // 限制旋转角度范围，防止翻转
       const maxRotation = 25;
       targetRotation.y = Math.max(-maxRotation, Math.min(maxRotation, deltaGamma * 2.5));
-      targetRotation.x = Math.max(-maxRotation, Math.min(maxRotation, deltaBeta * 2.5));
+      targetRotation.x = Math.max(-maxRotation, Math.min(maxRotation, -deltaBeta * 2.5)); // 上下反转
     };
     // 修复区域结束
 
@@ -474,7 +474,7 @@
       
       window.addEventListener('deviceorientation', handleOrientation, true);
       window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-      console.log('✅ Listeners added - v1.0.5');
+      console.log('✅ Listeners added - v1.0.6');
     };
 
     const requestPermission = () => {
