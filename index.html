@@ -355,7 +355,7 @@
 <body>
 
   <!-- Version Indicator -->
-  <div class="version">v1.0.9-debug</div>
+  <div class="version">v1.0.9</div>
 
   <!-- Hero Section -->
   <section class="hero">
@@ -467,7 +467,7 @@
         
         // 校准完成
         orientationCalibrated = true;
-        console.log('✅ Orientation calibrated:', initialOrientation);
+        console.log('✅ Orientation calibrated - Beta:', initialOrientation.beta.toFixed(1), 'Gamma:', initialOrientation.gamma.toFixed(1));
         return;
       }
 
@@ -476,8 +476,8 @@
       const deltaGamma = e.gamma - initialOrientation.gamma;
       const deltaBeta = e.beta - initialOrientation.beta;
 
-      // 限制旋转角度范围，防止翻转
-      const maxRotation = 25;
+      // 限制旋转角度范围，防止翻转 - 扩大限制
+      const maxRotation = 45;
       const rawY = deltaGamma * 0.8;
       const rawX = -deltaBeta * 0.8;
       targetRotation.y = Math.max(-maxRotation, Math.min(maxRotation, rawY));
