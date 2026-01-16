@@ -4,55 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Harper Bowie</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/eruda/3.0.1/eruda.min.js"></script>
-  <script>
-    eruda.init();
-    // Add copy button to eruda console
-    setTimeout(() => {
-      const checkConsole = setInterval(() => {
-        const consolePanel = document.querySelector('.eruda-console .eruda-control');
-        if (consolePanel) {
-          clearInterval(checkConsole);
-          
-          const style = document.createElement('style');
-          style.textContent = `
-            .eruda-copy-btn {
-              background: #2196F3;
-              color: white;
-              border: none;
-              padding: 5px 10px;
-              border-radius: 3px;
-              font-size: 11px;
-              cursor: pointer;
-              margin-left: 5px;
-            }
-            .eruda-copy-btn:active {
-              background: #1976D2;
-            }
-          `;
-          document.head.appendChild(style);
-          
-          const copyBtn = document.createElement('button');
-          copyBtn.className = 'eruda-copy-btn';
-          copyBtn.textContent = '📋 Copy';
-          copyBtn.onclick = () => {
-            const logs = document.querySelectorAll('.eruda-console .eruda-log-item');
-            let text = '';
-            logs.forEach(log => {
-              text += log.textContent + '\n';
-            });
-            navigator.clipboard.writeText(text).then(() => {
-              copyBtn.textContent = '✅ Copied!';
-              setTimeout(() => {
-                copyBtn.textContent = '📋 Copy';
-              }, 1500);
-            });
-          };
-          consolePanel.appendChild(copyBtn);
-        }
-      }, 100);
-    }, 500);
-  </script>
   <style>
     * {
       margin: 0;
@@ -70,7 +21,16 @@
       overflow-x: hidden;
     }
 
-    /* Hero Section */
+    .version {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 12px;
+      color: #86868b;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      z-index: 100;
+    }
+
     .hero {
       min-height: 100vh;
       display: flex;
@@ -81,7 +41,6 @@
       perspective: 1000px;
     }
 
-    /* Card Container */
     .card-container {
       width: 350px;
       height: 200px;
@@ -174,7 +133,6 @@
       margin-top: 6px;
     }
 
-    /* Contact Button */
     .contact-btn {
       padding: 12px 32px;
       background: white;
@@ -200,22 +158,25 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
-    /* About Section */
     .about {
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
       padding: 80px 20px;
       transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+      max-width: 700px;
+      margin: 0 auto;
     }
 
     .about h2 {
-      font-family: 'Georgia', 'Times New Roman', serif;
-      font-style: italic;
-      font-size: 36px;
-      margin-bottom: 60px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-style: normal;
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 30px;
+      color: #1d1d1f;
     }
 
     .about-content {
@@ -234,7 +195,6 @@
       color: #1d1d1f;
     }
 
-    /* Secret Section */
     .secret {
       min-height: 100vh;
       display: flex;
@@ -288,7 +248,6 @@
       transform: scale(0.95);
     }
 
-    /* Easter Egg */
     .easter-egg {
       position: fixed;
       top: 50%;
@@ -330,7 +289,7 @@
       }
 
       .about h2 {
-        font-size: 28px;
+        font-size: 20px;
       }
 
       .about-list div {
@@ -341,7 +300,8 @@
 </head>
 <body>
 
-  <!-- Hero Section -->
+  <div class="version">v1.1.0</div>
+
   <section class="hero">
     <div class="card-container" id="cardContainer">
       <div class="card" id="card">
@@ -358,7 +318,6 @@
     <a href="mailto:harper.ops.work@gmail.com" class="contact-btn" id="contactBtn">Contact Me</a>
   </section>
 
-  <!-- About Section -->
   <section class="about" id="about">
     <h2>Harper Bowie</h2>
     <div class="about-content">
@@ -375,7 +334,6 @@
     </div>
   </section>
 
-  <!-- Secret Section -->
   <section class="secret" id="secret">
     <div class="secret-input-container">
       <input type="text" class="secret-input" id="secretInput" placeholder="Type something...">
@@ -396,15 +354,13 @@
     let currentRotation = { x: 0, y: 0 };
     let targetRotation = { x: 0, y: 0 };
     let initialOrientation = null;
-    let orientationCalibrated = false; // 添加校准标志
+    let orientationCalibrated = false;
 
-    // Flip card on click
     card.addEventListener('click', () => {
       flipCount++;
       card.style.transform = `rotateY(${flipCount * 180}deg)`;
     });
 
-    // Mouse 3D interaction (Desktop)
     document.addEventListener('mousemove', (e) => {
       if (window.innerWidth < 768) return;
 
@@ -427,28 +383,23 @@
       targetRotation.x = Math.max(-maxRotation, Math.min(maxRotation, rotationX));
     });
 
-    // Gyroscope (Mobile) - 修复区域开始
     let permissionGranted = false;
     let orientationStarted = false;
 
     const handleOrientation = (e) => {
       if (window.innerWidth >= 768) return;
 
-      // 第一次接收到有效数据时，将其作为初始零点，并等待几帧稳定
       if (!orientationCalibrated && e.beta !== null && e.gamma !== null) {
-        // 等待数据稳定后再设置零点
         if (!initialOrientation) {
           initialOrientation = { beta: e.beta, gamma: e.gamma, count: 0 };
           return;
         }
         
-        // 收集几次数据确保稳定
         if (initialOrientation.count < 3) {
           initialOrientation.count++;
           return;
         }
         
-        // 校准完成
         orientationCalibrated = true;
         return;
       }
@@ -458,18 +409,15 @@
       const deltaGamma = e.gamma - initialOrientation.gamma;
       const deltaBeta = e.beta - initialOrientation.beta;
 
-      // 限制旋转角度范围，防止翻转
       const maxRotation = 25;
-      targetRotation.y = Math.max(-maxRotation, Math.min(maxRotation, deltaGamma * 0.8));
-      targetRotation.x = Math.max(-maxRotation, Math.min(maxRotation, -deltaBeta * 0.8));
+      targetRotation.y = Math.max(-maxRotation, Math.min(maxRotation, deltaGamma * 1.5));
+      targetRotation.x = Math.max(-maxRotation, Math.min(maxRotation, -deltaBeta * 1.5));
     };
-    // 修复区域结束
 
     const startOrientation = () => {
       if (orientationStarted) return;
       orientationStarted = true;
       
-      // 重置所有状态
       initialOrientation = null;
       orientationCalibrated = false;
       currentRotation = { x: 0, y: 0 };
@@ -477,7 +425,6 @@
       
       window.addEventListener('deviceorientation', handleOrientation, true);
       window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-      console.log('✅ Listeners added - v1.0.8');
     };
 
     const requestPermission = () => {
@@ -495,11 +442,9 @@
       }
     };
 
-    // Mobile detection and initialization
     if (window.innerWidth < 768) {
       if (typeof DeviceOrientationEvent !== 'undefined' && 
           typeof DeviceOrientationEvent.requestPermission === 'function') {
-        // iOS Safari - requires user interaction
         const btn = document.createElement('button');
         btn.textContent = 'Enable Gyroscope';
         btn.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;padding:12px 24px;background:#007AFF;color:white;border:none;border-radius:8px;font-size:16px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,0.2);';
@@ -510,12 +455,10 @@
           btn.remove();
         });
       } else {
-        // Android - auto start
         requestPermission();
       }
     }
 
-    // Smooth rotation animation
     function animateRotation() {
       currentRotation.x += (targetRotation.x - currentRotation.x) * 0.1;
       currentRotation.y += (targetRotation.y - currentRotation.y) * 0.1;
@@ -525,27 +468,22 @@
     }
     animateRotation();
 
-    // Scroll effects
     window.addEventListener('scroll', () => {
       const scrollY = window.scrollY;
       const windowHeight = window.innerHeight;
 
-      // Hero section - Apple-style for card and button separately
       const heroProgress = Math.min(1, scrollY / (windowHeight * 0.8));
       const heroFinalOpacity = Math.max(0, 1 - heroProgress);
       const heroFinalScale = Math.max(0.85, 1 - heroProgress * 0.15);
       const heroFinalY = heroProgress * 30;
       
-      // Apply to card
       cardContainer.style.opacity = heroFinalOpacity;
       cardContainer.style.filter = `blur(${heroProgress * 3}px)`;
       
-      // Apply to button
       contactBtn.style.opacity = heroFinalOpacity;
       contactBtn.style.transform = `translateY(${heroFinalY}px) scale(${heroFinalScale})`;
       contactBtn.style.filter = `blur(${heroProgress * 3}px)`;
 
-      // About section - Apple-style reveal: small->big, blur->clear, down->up
       const aboutTop = aboutSection.getBoundingClientRect().top;
       const aboutBottom = aboutSection.getBoundingClientRect().bottom;
       
@@ -554,20 +492,17 @@
       let aboutY = 40;
       
       if (aboutTop < windowHeight * 0.85) {
-        // Entering viewport from bottom
         const enterProgress = Math.min(1, (windowHeight * 0.85 - aboutTop) / 400);
         aboutOpacity = enterProgress;
         aboutScale = 0.92 + (0.08 * enterProgress);
         aboutY = 40 * (1 - enterProgress);
       } else if (aboutTop >= windowHeight * 0.85) {
-        // Not yet in viewport
         aboutOpacity = 0;
         aboutScale = 0.92;
         aboutY = 40;
       }
       
       if (aboutBottom < windowHeight * 0.15) {
-        // Leaving viewport from top
         const exitProgress = Math.max(0, aboutBottom / (windowHeight * 0.15));
         aboutOpacity = exitProgress;
         aboutScale = 0.92 + (0.08 * exitProgress);
@@ -577,7 +512,6 @@
       aboutSection.style.opacity = aboutOpacity;
       aboutSection.style.transform = `translateY(${aboutY}px) scale(${aboutScale})`;
 
-      // Secret section - Apple-style reveal: small->big, blur->clear, down->up
       const secretTop = secretSection.getBoundingClientRect().top;
       const secretBottom = secretSection.getBoundingClientRect().bottom;
       
@@ -607,10 +541,8 @@
       secretSection.style.transform = `translateY(${secretY}px) scale(${secretScale})`;
     });
     
-    // Trigger scroll event on load to set initial states
     window.dispatchEvent(new Event('scroll'));
 
-    // Easter egg
     function checkSecret() {
       if (secretInput.value.toLowerCase().trim() === 'sherman') {
         triggerEasterEgg();
@@ -626,20 +558,17 @@
     });
 
     function triggerEasterEgg() {
-      // Heart
       const heart = document.createElement('div');
       heart.className = 'easter-egg';
       heart.textContent = '❤️';
       document.body.appendChild(heart);
 
-      // Fireworks
       for (let i = 0; i < 50; i++) {
         setTimeout(() => {
           createFirework();
         }, i * 60);
       }
 
-      // Remove after 3 seconds
       setTimeout(() => {
         heart.remove();
       }, 3000);
