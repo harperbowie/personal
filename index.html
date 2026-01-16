@@ -54,19 +54,6 @@
     }, 500);
   </script>
   <style>
-    /* Version indicator */
-    .version {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      background: rgba(0,0,0,0.7);
-      color: white;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      z-index: 10000;
-      font-family: monospace;
-    }
     * {
       margin: 0;
       padding: 0;
@@ -354,9 +341,6 @@
 </head>
 <body>
 
-  <!-- Version Indicator -->
-  <div class="version">v1.0.9</div>
-
   <!-- Hero Section -->
   <section class="hero">
     <div class="card-container" id="cardContainer">
@@ -455,7 +439,6 @@
         // 等待数据稳定后再设置零点
         if (!initialOrientation) {
           initialOrientation = { beta: e.beta, gamma: e.gamma, count: 0 };
-          console.log('🎯 Calibrating orientation...');
           return;
         }
         
@@ -467,7 +450,6 @@
         
         // 校准完成
         orientationCalibrated = true;
-        console.log('✅ Orientation calibrated - Beta:', initialOrientation.beta.toFixed(1), 'Gamma:', initialOrientation.gamma.toFixed(1));
         return;
       }
 
@@ -476,17 +458,10 @@
       const deltaGamma = e.gamma - initialOrientation.gamma;
       const deltaBeta = e.beta - initialOrientation.beta;
 
-      // 限制旋转角度范围，防止翻转 - 扩大限制
-      const maxRotation = 45;
-      const rawY = deltaGamma * 0.8;
-      const rawX = -deltaBeta * 0.8;
-      targetRotation.y = Math.max(-maxRotation, Math.min(maxRotation, rawY));
-      targetRotation.x = Math.max(-maxRotation, Math.min(maxRotation, rawX));
-      
-      // 调试信息
-      if (Math.abs(rawX) > 5 || Math.abs(rawY) > 5) {
-        console.log('📱 Raw:', 'X:', rawX.toFixed(1), 'Y:', rawY.toFixed(1), '| Target:', 'X:', targetRotation.x.toFixed(1), 'Y:', targetRotation.y.toFixed(1));
-      }
+      // 限制旋转角度范围，防止翻转
+      const maxRotation = 25;
+      targetRotation.y = Math.max(-maxRotation, Math.min(maxRotation, deltaGamma * 0.8));
+      targetRotation.x = Math.max(-maxRotation, Math.min(maxRotation, -deltaBeta * 0.8));
     };
     // 修复区域结束
 
@@ -544,8 +519,6 @@
     function animateRotation() {
       currentRotation.x += (targetRotation.x - currentRotation.x) * 0.1;
       currentRotation.y += (targetRotation.y - currentRotation.y) * 0.1;
-
-      console.log('🎬 Current rotation:', 'X:', currentRotation.x.toFixed(1), 'Y:', currentRotation.y.toFixed(1));
 
       cardContainer.style.transform = `rotateX(${currentRotation.x}deg) rotateY(${currentRotation.y}deg)`;
       requestAnimationFrame(animateRotation);
