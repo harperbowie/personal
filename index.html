@@ -44,7 +44,7 @@
     .card-container {
       width: 350px;
       height: 200px;
-      Position: relative;
+      position: relative;
       transition: transform 0.1s ease-out;
       transform-style: preserve-3d;
       margin-bottom: 40px;
@@ -202,122 +202,215 @@
       align-items: center;
       justify-content: center;
       padding: 80px 20px;
-      transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), transform 1s cubic-bezier(0.4, 0, 0.2, 1), filter 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .secret.breathing {
-      filter: brightness(1.02);
+      transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+      background: white;
+      position: relative;
     }
 
     .secret-input-container {
       display: flex;
       gap: 12px;
       align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* 输入框包装器 - 用于光源 */
+    .secret-input-wrapper {
+      position: relative;
+      --glow-width: 100%;
+      --glow-height: 28px;
+      --glow-bottom: -2px;
+      --glow-blur: 12px;
+      --glow-alpha-peak: 0.68;
+      --glow-alpha-mid: 0.45;
+      --glow-spread: 25px;
+    }
+
+    /* 输入框独立的真实灯光 - 贴合底部的长条形光源 */
+    .secret-input-wrapper::before {
+      content: '';
+      position: absolute;
+      bottom: var(--glow-bottom);
+      left: 50%;
+      transform: translateX(-50%);
+      width: var(--glow-width);
+      height: var(--glow-height);
+      border-radius: 14px;
+      pointer-events: none;
+      z-index: -1;
+      background: 
+        radial-gradient(ellipse 100% 100% at center bottom, 
+          rgba(255, 230, 150, var(--glow-alpha-peak)) 0%,
+          rgba(255, 215, 130, var(--glow-alpha-mid)) 40%,
+          transparent 100%);
+      filter: blur(var(--glow-blur));
+      box-shadow: 
+        0 0 var(--glow-spread) calc(var(--glow-spread) * 0.4) rgba(255, 230, 150, calc(var(--glow-alpha-peak) * 0.6)),
+        0 0 calc(var(--glow-spread) * 2) calc(var(--glow-spread) * 0.8) rgba(255, 215, 130, calc(var(--glow-alpha-mid) * 0.4));
+      transition: all 1.4s cubic-bezier(0.19, 1, 0.22, 1);
+      mix-blend-mode: screen;
+    }
+
+    /* 输入框抬起时光源变化 - 向下移动、扩散、变暗 */
+    .secret-input-wrapper.lift {
+      --glow-width: 110%;
+      --glow-height: 35px;
+      --glow-bottom: -8px;
+      --glow-blur: 18px;
+      --glow-alpha-peak: 0.42;
+      --glow-alpha-mid: 0.24;
+      --glow-spread: 35px;
+    }
+
+    /* 按钮包装器 - 用于光源 */
+    .secret-btn-wrapper {
+      position: relative;
+      --glow-width: 100%;
+      --glow-height: 28px;
+      --glow-bottom: -2px;
+      --glow-blur: 12px;
+      --glow-alpha-peak: 0.68;
+      --glow-alpha-mid: 0.45;
+      --glow-spread: 25px;
+    }
+
+    /* 按钮独立的真实灯光 - 贴合底部的方形光源 */
+    .secret-btn-wrapper::before {
+      content: '';
+      position: absolute;
+      bottom: var(--glow-bottom);
+      left: 50%;
+      transform: translateX(-50%);
+      width: var(--glow-width);
+      height: var(--glow-height);
+      border-radius: 14px;
+      pointer-events: none;
+      z-index: -1;
+      background: 
+        radial-gradient(ellipse 100% 100% at center bottom, 
+          rgba(255, 230, 150, var(--glow-alpha-peak)) 0%,
+          rgba(255, 215, 130, var(--glow-alpha-mid)) 40%,
+          transparent 100%);
+      filter: blur(var(--glow-blur));
+      box-shadow: 
+        0 0 var(--glow-spread) calc(var(--glow-spread) * 0.4) rgba(255, 230, 150, calc(var(--glow-alpha-peak) * 0.6)),
+        0 0 calc(var(--glow-spread) * 2) calc(var(--glow-spread) * 0.8) rgba(255, 215, 130, calc(var(--glow-alpha-mid) * 0.4));
+      transition: all 1.4s cubic-bezier(0.19, 1, 0.22, 1);
+      mix-blend-mode: screen;
+    }
+
+    /* 按钮抬起时光源变化 - 向下移动、扩散、变暗 */
+    .secret-btn-wrapper.lift {
+      --glow-width: 110%;
+      --glow-height: 35px;
+      --glow-bottom: -8px;
+      --glow-blur: 18px;
+      --glow-alpha-peak: 0.42;
+      --glow-alpha-mid: 0.24;
+      --glow-spread: 35px;
+    }
+
+    /* 防止两个光源靠近时过亮 */
+    .secret-input-container.active .secret-input-wrapper::before,
+    .secret-input-container.active .secret-btn-wrapper::before {
+      --glow-alpha-peak: 0.50;
+      --glow-alpha-mid: 0.30;
+    }
+
+    .secret-input-container.active .secret-input-wrapper.lift::before,
+    .secret-input-container.active .secret-btn-wrapper.lift::before {
+      --glow-alpha-peak: 0.32;
+      --glow-alpha-mid: 0.18;
     }
 
     .secret-input {
       padding: 0 24px;
       border: none;
-      border-radius: 16px;
+      border-radius: 14px;
       font-size: 15px;
       outline: none;
       width: 280px;
-      height: 52px;
-      line-height: 52px;
-      background: rgba(255, 255, 255, 0.25);
-      backdrop-filter: blur(20px);
+      height: 50px;
+      line-height: 50px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(30px) saturate(180%);
       box-shadow: 
-        inset 0 0.5px 1px rgba(0, 0, 0, 0.02),
-        0 0.5px 1px rgba(255, 255, 255, 0.5);
-      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        inset 0 1px 2px rgba(255, 255, 255, 0.5),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.03),
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        0 4px 8px rgba(0, 0, 0, 0.06),
+        0 8px 16px rgba(0, 0, 0, 0.04);
+      transition: all 1.8s cubic-bezier(0.19, 1, 0.22, 1);
       color: #1d1d1f;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      opacity: 0.6;
+      position: relative;
     }
 
     .secret-input::placeholder {
-      color: rgba(0, 0, 0, 0.15);
+      color: rgba(0, 0, 0, 0.3);
       font-weight: 300;
       letter-spacing: 0.3px;
-      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 1.8s cubic-bezier(0.19, 1, 0.22, 1);
     }
 
-    .secret-input:focus {
-      background: rgba(255, 255, 255, 0.7);
+    /* 输入框抬起状态 */
+    .secret-input.lift {
+      background: rgba(255, 255, 255, 1);
       box-shadow: 
-        inset 0 1px 2px rgba(0, 0, 0, 0.06),
-        inset 0 2px 4px rgba(0, 0, 0, 0.03),
-        0 2px 6px rgba(255, 255, 255, 0.95),
-        0 4px 12px rgba(0, 0, 0, 0.04),
-        0 0 0 0.5px rgba(255, 255, 255, 0.6);
-      transform: translateY(-1px);
-      opacity: 1;
+        inset 0 1px 2px rgba(255, 255, 255, 0.6),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.02),
+        0 4px 8px rgba(0, 0, 0, 0.1),
+        0 8px 16px rgba(0, 0, 0, 0.08),
+        0 16px 32px rgba(0, 0, 0, 0.06);
+      transform: translateY(-6px);
+      color: #000;
     }
 
-    .secret-input:focus::placeholder {
-      color: rgba(0, 0, 0, 0.25);
+    .secret-input.lift::placeholder {
+      color: rgba(0, 0, 0, 0.4);
       transform: translateX(2px);
     }
 
     .secret-btn {
-      width: 52px;
-      height: 52px;
+      width: 50px;
+      height: 50px;
       border: none;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.25);
-      backdrop-filter: blur(20px);
-      color: rgba(0, 0, 0, 0.2);
-      font-size: 17px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(30px) saturate(180%);
+      color: rgba(0, 0, 0, 0.4);
+      font-size: 16px;
       cursor: pointer;
-      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 1.8s cubic-bezier(0.19, 1, 0.22, 1);
       display: flex;
       align-items: center;
       justify-content: center;
       box-shadow: 
-        inset 0 0.5px 1px rgba(0, 0, 0, 0.02),
-        0 0.5px 1px rgba(255, 255, 255, 0.5);
+        inset 0 1px 2px rgba(255, 255, 255, 0.5),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.03),
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        0 4px 8px rgba(0, 0, 0, 0.06),
+        0 8px 16px rgba(0, 0, 0, 0.04);
       flex-shrink: 0;
-      opacity: 0.4;
+      position: relative;
     }
 
-    .secret-btn:hover {
-      background: rgba(255, 255, 255, 0.7);
-      color: rgba(0, 0, 0, 0.5);
-      transform: translateY(-1px);
+    /* 按钮抬起状态 */
+    .secret-btn.lift {
+      background: rgba(255, 255, 255, 1);
+      color: rgba(0, 0, 0, 0.7);
       box-shadow: 
-        inset 0 1px 2px rgba(0, 0, 0, 0.06),
-        inset 0 2px 4px rgba(0, 0, 0, 0.03),
-        0 2px 6px rgba(255, 255, 255, 0.95),
-        0 4px 12px rgba(0, 0, 0, 0.04),
-        0 0 0 0.5px rgba(255, 255, 255, 0.6);
-      opacity: 1;
+        inset 0 1px 2px rgba(255, 255, 255, 0.6),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.02),
+        0 4px 8px rgba(0, 0, 0, 0.1),
+        0 8px 16px rgba(0, 0, 0, 0.08),
+        0 16px 32px rgba(0, 0, 0, 0.06);
+      transform: translateY(-6px);
     }
 
     .secret-btn:active {
-      transform: translateY(0) scale(0.97);
-      background: rgba(255, 255, 255, 0.65);
-      color: rgba(0, 0, 0, 0.45);
-      box-shadow: 
-        inset 0 1px 3px rgba(0, 0, 0, 0.08),
-        inset 0 2px 6px rgba(0, 0, 0, 0.04),
-        0 1px 3px rgba(255, 255, 255, 0.8),
-        0 2px 6px rgba(0, 0, 0, 0.03);
-    }
-
-    .secret-input.has-value,
-    .secret-input.has-value ~ .secret-btn {
-      background: rgba(255, 255, 255, 0.7);
-      box-shadow: 
-        inset 0 1px 2px rgba(0, 0, 0, 0.06),
-        inset 0 2px 4px rgba(0, 0, 0, 0.03),
-        0 2px 6px rgba(255, 255, 255, 0.95),
-        0 4px 12px rgba(0, 0, 0, 0.04),
-        0 0 0 0.5px rgba(255, 255, 255, 0.6);
-      opacity: 1;
-    }
-
-    .secret-input.has-value ~ .secret-btn {
-      color: rgba(0, 0, 0, 0.5);
+      transform: translateY(-3px) scale(0.99);
     }
 
     .easter-egg {
@@ -372,7 +465,7 @@
 </head>
 <body>
 
-  <div class="version">v1.1.0</div>
+  <div class="version">v1.2.1</div>
 
   <section class="hero">
     <div class="card-container" id="cardContainer">
@@ -407,9 +500,13 @@
   </section>
 
   <section class="secret" id="secret">
-    <div class="secret-input-container">
-      <input type="text" class="secret-input" id="secretInput" placeholder="type something...">
-      <button class="secret-btn" id="secretBtn">➤</button>
+    <div class="secret-input-container" id="secretContainer">
+      <div class="secret-input-wrapper" id="inputWrapper">
+        <input type="text" class="secret-input" id="secretInput" placeholder="type something...">
+      </div>
+      <div class="secret-btn-wrapper" id="btnWrapper">
+        <button class="secret-btn" id="secretBtn">➤</button>
+      </div>
     </div>
   </section>
 
@@ -419,23 +516,46 @@
     const contactBtn = document.getElementById('contactBtn');
     const aboutSection = document.getElementById('about');
     const secretSection = document.getElementById('secret');
+    const secretContainer = document.getElementById('secretContainer');
+    const inputWrapper = document.getElementById('inputWrapper');
     const secretInput = document.getElementById('secretInput');
+    const btnWrapper = document.getElementById('btnWrapper');
     const secretBtn = document.getElementById('secretBtn');
 
     secretInput.addEventListener('input', () => {
       if (secretInput.value.length > 0) {
-        secretInput.classList.add('has-value');
+        secretInput.classList.add('lift');
+        inputWrapper.classList.add('lift');
+        secretContainer.classList.add('active');
       } else {
-        secretInput.classList.remove('has-value');
+        secretInput.classList.remove('lift');
+        inputWrapper.classList.remove('lift');
+        secretContainer.classList.remove('active');
       }
     });
 
     secretInput.addEventListener('focus', () => {
-      secretSection.classList.add('breathing');
+      secretInput.classList.add('lift');
+      inputWrapper.classList.add('lift');
+      secretContainer.classList.add('active');
     });
 
     secretInput.addEventListener('blur', () => {
-      secretSection.classList.remove('breathing');
+      if (secretInput.value.length === 0) {
+        secretInput.classList.remove('lift');
+        inputWrapper.classList.remove('lift');
+        secretContainer.classList.remove('active');
+      }
+    });
+
+    secretBtn.addEventListener('mouseenter', () => {
+      secretBtn.classList.add('lift');
+      btnWrapper.classList.add('lift');
+    });
+
+    secretBtn.addEventListener('mouseleave', () => {
+      secretBtn.classList.remove('lift');
+      btnWrapper.classList.remove('lift');
     });
 
     let flipCount = 0;
@@ -471,7 +591,6 @@
       targetRotation.x = Math.max(-maxRotation, Math.min(maxRotation, rotationX));
     });
 
-    let permissionGranted = false;
     let orientationStarted = false;
 
     const handleOrientation = (e) => {
@@ -513,11 +632,6 @@
       
       window.addEventListener('deviceorientation', handleOrientation, true);
       window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-      
-      // 保存权限状态到 localStorage
-      try {
-        localStorage.setItem('gyroPermissionGranted', 'true');
-      } catch(e) {}
     };
 
     const requestPermission = () => {
@@ -535,32 +649,17 @@
       }
     };
 
-    // 检查是否已有权限或之前已授权
     if (window.innerWidth < 768) {
-      // 检查 localStorage 中是否有之前的权限记录
-      let hadPermission = false;
-      try {
-        hadPermission = localStorage.getItem('gyroPermissionGranted') === 'true';
-      } catch(e) {}
-      
       if (typeof DeviceOrientationEvent !== 'undefined' && 
           typeof DeviceOrientationEvent.requestPermission === 'function') {
-        // Safari iOS 13+
-        if (hadPermission) {
-          // 如果之前授权过，直接尝试请求
+        const handleFirstInteraction = () => {
           requestPermission();
-        } else {
-          // 首次访问，监听用户的第一次交互
-          const handleFirstInteraction = () => {
-            requestPermission();
-            document.removeEventListener('touchstart', handleFirstInteraction);
-            document.removeEventListener('click', handleFirstInteraction);
-          };
-          document.addEventListener('touchstart', handleFirstInteraction, { once: true });
-          document.addEventListener('click', handleFirstInteraction, { once: true });
-        }
+          document.removeEventListener('touchstart', handleFirstInteraction);
+          document.removeEventListener('click', handleFirstInteraction);
+        };
+        document.addEventListener('touchstart', handleFirstInteraction, { once: true });
+        document.addEventListener('click', handleFirstInteraction, { once: true });
       } else {
-        // 非 Safari 或不需要权限的设备，直接启动
         requestPermission();
       }
     }
@@ -653,6 +752,9 @@
       if (secretInput.value.toLowerCase().trim() === 'sherman') {
         triggerEasterEgg();
         secretInput.value = '';
+        secretInput.classList.remove('lift');
+        inputWrapper.classList.remove('lift');
+        secretContainer.classList.remove('active');
       }
     }
 
