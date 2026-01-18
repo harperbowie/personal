@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Harper Bowie</title>
   <style>
     * {
@@ -15,10 +15,16 @@
       user-select: none;
     }
 
+    html {
+      overflow: hidden;
+      height: 100%;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       background: white;
-      overflow-x: hidden;
+      overflow: hidden;
+      height: 100%;
     }
 
     .version {
@@ -31,12 +37,132 @@
       z-index: 100;
     }
 
-    .hero {
-      min-height: 100vh;
+    /* 调试面板 */
+    .debug-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.85);
+      color: #0f0;
+      font-family: monospace;
+      font-size: 11px;
+      padding: 10px;
+      z-index: 9999;
+      max-height: 30vh;
+      overflow-y: auto;
+      display: none;
+    }
+    
+    .debug-panel.show {
+      display: block;
+    }
+    
+    .debug-panel div {
+      margin: 2px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding: 2px 0;
+    }
+    
+    .debug-toggle {
+      position: fixed;
+      top: 20px;
+      right: 60px;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      border: none;
+      padding: 5px 10px;
+      font-size: 10px;
+      border-radius: 4px;
+      z-index: 9999;
+    }
+    
+    .debug-copy {
+      position: fixed;
+      top: 20px;
+      right: 120px;
+      background: rgba(0,100,0,0.8);
+      color: #fff;
+      border: none;
+      padding: 5px 10px;
+      font-size: 10px;
+      border-radius: 4px;
+      z-index: 9999;
+    }
+    
+    .debug-copy.copied {
+      background: rgba(0,150,0,1);
+    }
+
+    /* 页面指示器 */
+    .page-indicators {
+      position: fixed;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 100;
+      transition: opacity 0.3s ease;
+    }
+
+    .indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .indicator.active {
+      background: rgba(0, 0, 0, 0.6);
+      transform: scale(1.3);
+    }
+
+    .indicator:hover {
+      background: rgba(0, 0, 0, 0.4);
+    }
+
+    /* 全屏容器 */
+    .fullpage-container {
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .sections-wrapper {
+      height: 100%;
+      transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
+      will-change: transform;
+    }
+
+    .section {
+      height: 100vh;
+      width: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      position: relative;
+      opacity: 0;
+      transform: translateY(30px) scale(0.95);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .section.active {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .section.prev {
+      opacity: 0;
+      transform: translateY(-30px) scale(0.95);
+    }
+
+    /* Hero Section */
+    .hero {
       padding: 40px 20px;
       perspective: 1000px;
     }
@@ -158,16 +284,12 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
+    /* About Section */
     .about {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      justify-content: center;
       padding: 80px 20px;
-      transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), transform 1s cubic-bezier(0.4, 0, 0.2, 1);
       max-width: 700px;
       margin: 0 auto;
+      align-items: flex-start;
     }
 
     .about h2 {
@@ -195,16 +317,151 @@
       color: #1d1d1f;
     }
 
+    /* Secret Section */
     .secret {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
       padding: 80px 20px;
-      transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), transform 1s cubic-bezier(0.4, 0, 0.2, 1);
       background: white;
+      justify-content: flex-start;
+      padding-top: 22vh;
       position: relative;
+    }
+    
+    @media (min-width: 769px) {
+      .secret {
+        justify-content: center;
+        padding-top: 80px;
+      }
+    }
+    
+    /* 移动端双输入框方案 */
+    @media (max-width: 768px) {
+      .secret {
+        padding-top: 80px;
+      }
+      
+      /* 隐藏桌面端 input */
+      .desktop-input {
+        display: none !important;
+      }
+      
+      /* 真输入框：在顶部，完全透明且禁止直接点击 */
+      .real-input-container {
+        position: absolute;
+        top: 8vh;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: -1; /* 放到下层，防止误触 */
+        opacity: 0;
+        pointer-events: none; /* 禁止点击 */
+      }
+      
+      .real-input {
+        padding: 0 16px;
+        border: none;
+        border-radius: 14px;
+        font-size: 15px;
+        outline: none;
+        width: 280px;
+        height: 50px;
+        background: transparent;
+        color: transparent;
+        caret-color: transparent;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        pointer-events: auto; /* input 本身可以接收焦点 */
+      }
+      
+      .real-input::placeholder {
+        color: transparent;
+      }
+      
+      /* 假输入框容器：在中间，始终可见 */
+      .secret-input-container {
+        position: absolute;
+        top: 45%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      
+      /* 假输入框的内容区域 */
+      .fake-display {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+      }
+      
+      .fake-text {
+        white-space: nowrap;
+        overflow: hidden;
+      }
+      
+      /* 假输入框的光标 - 奶白色，用阴影在白色背景上显现 */
+      .fake-cursor {
+        display: none;
+        width: 2px;
+        height: 1.2em;
+        background: linear-gradient(180deg, 
+          rgba(255, 253, 245, 0.95) 0%,
+          rgba(250, 245, 235, 0.9) 100%
+        );
+        border-radius: 1px;
+        vertical-align: middle;
+        animation: cursor-glow 1s ease-in-out infinite;
+        flex-shrink: 0;
+        margin-left: 1px;
+        box-shadow: 
+          0 0 1px rgba(0, 0, 0, 0.15),
+          0 0 3px rgba(200, 180, 150, 0.3),
+          0 0 6px rgba(255, 245, 220, 0.4);
+      }
+      
+      /* 聚焦时显示光标 */
+      .fake-display.focused .fake-cursor {
+        display: inline-block;
+      }
+      
+      /* 聚焦时如果是 placeholder 状态，隐藏 placeholder 文字 */
+      .fake-display.focused .fake-text.placeholder {
+        display: none;
+      }
+      
+      @keyframes cursor-glow {
+        0%, 100% { 
+          opacity: 1;
+          box-shadow: 
+            0 0 1px rgba(0, 0, 0, 0.15),
+            0 0 3px rgba(200, 180, 150, 0.3),
+            0 0 6px rgba(255, 245, 220, 0.4);
+        }
+        50% { 
+          opacity: 0.15;
+          box-shadow: 
+            0 0 1px rgba(0, 0, 0, 0.08),
+            0 0 2px rgba(200, 180, 150, 0.15);
+        }
+      }
+    }
+    
+    /* 桌面端 */
+    @media (min-width: 769px) {
+      /* 隐藏移动端的真输入框容器 */
+      .real-input-container {
+        display: none !important;
+      }
+      
+      /* 隐藏假输入框显示层 */
+      .fake-display {
+        display: none !important;
+      }
+      
+      /* 显示桌面端 input */
+      .desktop-input {
+        display: block !important;
+      }
+      
+      /* 桌面端 lift 状态时隐藏 placeholder */
+      .desktop-input.lift::placeholder {
+        opacity: 0;
+      }
     }
 
     .secret-input-container {
@@ -215,117 +472,108 @@
       z-index: 1;
     }
 
-    /* 输入框包装器 - 用于光源 */
+    /* 输入框包装器 */
     .secret-input-wrapper {
       position: relative;
-      --glow-width: 100%;
-      --glow-height: 28px;
-      --glow-bottom: -2px;
-      --glow-blur: 12px;
-      --glow-alpha-peak: 0.68;
-      --glow-alpha-mid: 0.45;
-      --glow-spread: 25px;
     }
 
-    /* 输入框独立的真实灯光 - 贴合底部的长条形光源 */
+    /* 输入框底部发光 - 单一暖黄色，通过大小和透明度变化 */
     .secret-input-wrapper::before {
       content: '';
       position: absolute;
-      bottom: var(--glow-bottom);
-      left: 50%;
-      transform: translateX(-50%);
-      width: var(--glow-width);
-      height: var(--glow-height);
-      border-radius: 14px;
+      left: -8px;
+      right: -8px;
+      top: -6px;
+      bottom: -6px;
       pointer-events: none;
       z-index: -1;
-      background: 
-        radial-gradient(ellipse 100% 100% at center bottom, 
-          rgba(255, 230, 150, var(--glow-alpha-peak)) 0%,
-          rgba(255, 215, 130, var(--glow-alpha-mid)) 40%,
-          transparent 100%);
-      filter: blur(var(--glow-blur));
-      box-shadow: 
-        0 0 var(--glow-spread) calc(var(--glow-spread) * 0.4) rgba(255, 230, 150, calc(var(--glow-alpha-peak) * 0.6)),
-        0 0 calc(var(--glow-spread) * 2) calc(var(--glow-spread) * 0.8) rgba(255, 215, 130, calc(var(--glow-alpha-mid) * 0.4));
-      transition: all 1.4s cubic-bezier(0.19, 1, 0.22, 1);
-      mix-blend-mode: screen;
+      border-radius: 14px;
+      transition: 
+        opacity 1.4s cubic-bezier(0.19, 1, 0.22, 1),
+        filter 1.4s cubic-bezier(0.19, 1, 0.22, 1),
+        left 1.4s cubic-bezier(0.19, 1, 0.22, 1),
+        right 1.4s cubic-bezier(0.19, 1, 0.22, 1),
+        top 1.4s cubic-bezier(0.19, 1, 0.22, 1),
+        bottom 1.4s cubic-bezier(0.19, 1, 0.22, 1);
+      /* 近时：小而亮 */
+      filter: blur(8px);
+      opacity: 0.95;
+      /* 统一的暖黄色 */
+      background: radial-gradient(
+        ellipse 90% 90% at center center,
+        rgba(255, 240, 200, 1) 0%,
+        rgba(255, 230, 180, 0.75) 40%,
+        rgba(255, 220, 160, 0.35) 70%,
+        transparent 100%
+      );
     }
 
-    /* 输入框抬起时光源变化 - 向下移动、扩散、变暗 */
-    .secret-input-wrapper.lift {
-      --glow-width: 110%;
-      --glow-height: 35px;
-      --glow-bottom: -8px;
-      --glow-blur: 18px;
-      --glow-alpha-peak: 0.42;
-      --glow-alpha-mid: 0.24;
-      --glow-spread: 35px;
+    /* 输入框抬起时 - 四周均匀扩散 */
+    .secret-input-wrapper.lift::before {
+      left: -25px;
+      right: -25px;
+      top: -25px;
+      bottom: -25px;
+      filter: blur(22px);
+      opacity: 0.4;
     }
 
-    /* 按钮包装器 - 用于光源 */
+    /* 按钮包装器 */
     .secret-btn-wrapper {
       position: relative;
-      --glow-width: 100%;
-      --glow-height: 28px;
-      --glow-bottom: -2px;
-      --glow-blur: 12px;
-      --glow-alpha-peak: 0.68;
-      --glow-alpha-mid: 0.45;
-      --glow-spread: 25px;
     }
 
-    /* 按钮独立的真实灯光 - 贴合底部的方形光源 */
+    /* 按钮底部发光 - 单一暖黄色，通过大小和透明度变化 */
     .secret-btn-wrapper::before {
       content: '';
       position: absolute;
-      bottom: var(--glow-bottom);
       left: 50%;
-      transform: translateX(-50%);
-      width: var(--glow-width);
-      height: var(--glow-height);
-      border-radius: 14px;
+      top: 50%;
+      transform: translate(-50%, -50%);
       pointer-events: none;
       z-index: -1;
-      background: 
-        radial-gradient(ellipse 100% 100% at center bottom, 
-          rgba(255, 230, 150, var(--glow-alpha-peak)) 0%,
-          rgba(255, 215, 130, var(--glow-alpha-mid)) 40%,
-          transparent 100%);
-      filter: blur(var(--glow-blur));
-      box-shadow: 
-        0 0 var(--glow-spread) calc(var(--glow-spread) * 0.4) rgba(255, 230, 150, calc(var(--glow-alpha-peak) * 0.6)),
-        0 0 calc(var(--glow-spread) * 2) calc(var(--glow-spread) * 0.8) rgba(255, 215, 130, calc(var(--glow-alpha-mid) * 0.4));
-      transition: all 1.4s cubic-bezier(0.19, 1, 0.22, 1);
-      mix-blend-mode: screen;
+      border-radius: 14px;
+      transition: 
+        opacity 1.4s cubic-bezier(0.19, 1, 0.22, 1),
+        filter 1.4s cubic-bezier(0.19, 1, 0.22, 1),
+        width 1.4s cubic-bezier(0.19, 1, 0.22, 1),
+        height 1.4s cubic-bezier(0.19, 1, 0.22, 1);
+      /* 近时：小而亮 */
+      width: 112%;
+      height: 112%;
+      filter: blur(8px);
+      opacity: 0.95;
+      /* 统一的暖黄色 */
+      background: radial-gradient(
+        ellipse 90% 90% at center center,
+        rgba(255, 240, 200, 1) 0%,
+        rgba(255, 230, 180, 0.75) 40%,
+        rgba(255, 220, 160, 0.35) 70%,
+        transparent 100%
+      );
     }
 
-    /* 按钮抬起时光源变化 - 向下移动、扩散、变暗 */
-    .secret-btn-wrapper.lift {
-      --glow-width: 110%;
-      --glow-height: 35px;
-      --glow-bottom: -8px;
-      --glow-blur: 18px;
-      --glow-alpha-peak: 0.42;
-      --glow-alpha-mid: 0.24;
-      --glow-spread: 35px;
+    /* 按钮抬起时 - 大而暗 */
+    .secret-btn-wrapper.lift::before {
+      width: 165%;
+      height: 175%;
+      filter: blur(22px);
+      opacity: 0.4;
     }
 
-    /* 防止两个光源靠近时过亮 */
+    /* 防止两个光源靠近时中间过亮 */
     .secret-input-container.active .secret-input-wrapper::before,
     .secret-input-container.active .secret-btn-wrapper::before {
-      --glow-alpha-peak: 0.50;
-      --glow-alpha-mid: 0.30;
+      opacity: 0.8;
     }
 
     .secret-input-container.active .secret-input-wrapper.lift::before,
     .secret-input-container.active .secret-btn-wrapper.lift::before {
-      --glow-alpha-peak: 0.32;
-      --glow-alpha-mid: 0.18;
+      opacity: 0.55;
     }
 
     .secret-input {
-      padding: 0 24px;
+      padding: 0 16px;
       border: none;
       border-radius: 14px;
       font-size: 15px;
@@ -345,6 +593,9 @@
       color: #1d1d1f;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       position: relative;
+      -webkit-user-select: text;
+      user-select: text;
+      caret-color: rgba(180, 170, 155, 0.8);
     }
 
     .secret-input::placeholder {
@@ -354,7 +605,6 @@
       transition: all 1.8s cubic-bezier(0.19, 1, 0.22, 1);
     }
 
-    /* 输入框抬起状态 */
     .secret-input.lift {
       background: rgba(255, 255, 255, 1);
       box-shadow: 
@@ -396,7 +646,6 @@
       position: relative;
     }
 
-    /* 按钮抬起状态 */
     .secret-btn.lift {
       background: rgba(255, 255, 255, 1);
       color: rgba(0, 0, 0, 0.7);
@@ -460,117 +709,671 @@
       .about-list div {
         font-size: 14px;
       }
+
+      .page-indicators {
+        right: 12px;
+      }
+
+      .indicator {
+        width: 6px;
+        height: 6px;
+      }
     }
   </style>
 </head>
 <body>
 
-  <div class="version">v1.2.1</div>
+  <div class="version">v2.1.8</div>
+  
+  <!-- 调试面板 -->
+  <button class="debug-copy" id="debugCopy" onclick="copyDebug()">COPY</button>
+  <button class="debug-toggle" onclick="toggleDebug()">DEBUG</button>
+  <div class="debug-panel" id="debugPanel"></div>
 
-  <section class="hero">
-    <div class="card-container" id="cardContainer">
-      <div class="card" id="card">
-        <div class="card-face card-front">
-          Harper Bowie
+  <!-- 页面指示器 -->
+  <div class="page-indicators">
+    <div class="indicator active" data-page="0"></div>
+    <div class="indicator" data-page="1"></div>
+    <div class="indicator" data-page="2"></div>
+  </div>
+
+  <div class="fullpage-container">
+    <div class="sections-wrapper" id="sectionsWrapper">
+      
+      <section class="section hero active" id="hero">
+        <div class="card-container" id="cardContainer">
+          <div class="card" id="card">
+            <div class="card-face card-front">
+              Harper Bowie
+            </div>
+            <div class="card-face card-back">
+              <div class="card-back-line1">Curious about what's next.</div>
+              <div class="card-back-line2">Learning by doing.</div>
+              <div class="card-back-line3">harper.ops.work@gmail.com</div>
+            </div>
+          </div>
         </div>
-        <div class="card-face card-back">
-          <div class="card-back-line1">Curious about what's next.</div>
-          <div class="card-back-line2">Learning by doing.</div>
-          <div class="card-back-line3">harper.ops.work@gmail.com</div>
+        <a href="mailto:harper.ops.work@gmail.com" class="contact-btn" id="contactBtn">Contact Me</a>
+      </section>
+
+      <section class="section about" id="about">
+        <h2>Harper Bowie</h2>
+        <div class="about-content">
+          <div class="about-list">
+            <div>• 独立搭建并维护海外服务器与私人独享节点</div>
+            <div>• 理解网络与基础设施的真实工作方式</div>
+            <div>• 持续关注并参与 Web3 与去中心化生态</div>
+          </div>
+          <div class="about-list">
+            <div>• Independently build and maintain overseas servers and a private dedicated node</div>
+            <div>• Understand how networks and infrastructure actually work</div>
+            <div>• Actively following and participating in Web3 and decentralized ecosystems</div>
+          </div>
         </div>
-      </div>
-    </div>
-    <a href="mailto:harper.ops.work@gmail.com" class="contact-btn" id="contactBtn">Contact Me</a>
-  </section>
+      </section>
 
-  <section class="about" id="about">
-    <h2>Harper Bowie</h2>
-    <div class="about-content">
-      <div class="about-list">
-        <div>• 独立搭建并维护海外服务器与私人独享节点</div>
-        <div>• 理解网络与基础设施的真实工作方式</div>
-        <div>• 持续关注并参与 Web3 与去中心化生态</div>
-      </div>
-      <div class="about-list">
-        <div>• Independently build and maintain overseas servers and a private dedicated node</div>
-        <div>• Understand how networks and infrastructure actually work</div>
-        <div>• Actively following and participating in Web3 and decentralized ecosystems</div>
-      </div>
-    </div>
-  </section>
+      <section class="section secret" id="secret">
+        <!-- 真输入框：移动端在顶部，简单无光效 -->
+        <div class="real-input-container" id="realInputContainer">
+          <input type="text" class="real-input" id="secretInput" placeholder="type something...">
+        </div>
+        
+        <!-- 假输入框 + 按钮：移动端在中间，完整动画 -->
+        <div class="secret-input-container" id="secretContainer">
+          <div class="secret-input-wrapper" id="inputWrapper">
+            <!-- 桌面端用这个真 input -->
+            <input type="text" class="secret-input desktop-input" id="desktopInput" placeholder="type something...">
+            <!-- 移动端用这个假显示层 -->
+            <div class="secret-input fake-display" id="fakeInput"><span class="fake-text placeholder" style="color: rgba(0, 0, 0, 0.3);">type something...</span><span class="fake-cursor"></span></div>
+          </div>
+          <div class="secret-btn-wrapper" id="btnWrapper">
+            <button class="secret-btn" id="secretBtn">➤</button>
+          </div>
+        </div>
+      </section>
 
-  <section class="secret" id="secret">
-    <div class="secret-input-container" id="secretContainer">
-      <div class="secret-input-wrapper" id="inputWrapper">
-        <input type="text" class="secret-input" id="secretInput" placeholder="type something...">
-      </div>
-      <div class="secret-btn-wrapper" id="btnWrapper">
-        <button class="secret-btn" id="secretBtn">➤</button>
-      </div>
     </div>
-  </section>
+  </div>
 
   <script>
-    const cardContainer = document.getElementById('cardContainer');
-    const card = document.getElementById('card');
-    const contactBtn = document.getElementById('contactBtn');
-    const aboutSection = document.getElementById('about');
+    // ==================== 调试工具 ====================
+    const debugPanel = document.getElementById('debugPanel');
+    let debugLogs = [];
+    
+    function toggleDebug() {
+      debugPanel.classList.toggle('show');
+    }
+    
+    function copyDebug() {
+      const text = debugLogs.join('\n');
+      
+      // 创建一个全屏文本框让用户手动复制
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:99999;padding:20px;display:flex;flex-direction:column;';
+      
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.cssText = 'flex:1;width:100%;font-family:monospace;font-size:11px;background:#111;color:#0f0;border:1px solid #333;padding:10px;resize:none;';
+      textarea.readOnly = true;
+      
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = '关闭';
+      closeBtn.style.cssText = 'margin-top:10px;padding:12px;font-size:16px;background:#333;color:#fff;border:none;border-radius:8px;';
+      closeBtn.onclick = () => overlay.remove();
+      
+      overlay.appendChild(textarea);
+      overlay.appendChild(closeBtn);
+      document.body.appendChild(overlay);
+      
+      // 自动选中文本
+      textarea.focus();
+      textarea.select();
+    }
+    
+    function log(msg) {
+      const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 });
+      const entry = `[${time}] ${msg}`;
+      debugLogs.push(entry);
+      if (debugLogs.length > 50) debugLogs.shift();
+      debugPanel.innerHTML = debugLogs.map(l => `<div>${l}</div>`).join('');
+      debugPanel.scrollTop = debugPanel.scrollHeight;
+      console.log(entry);
+    }
+    
+    // 初始信息
+    log(`UA: ${navigator.userAgent.slice(0, 80)}...`);
+    log(`Screen: ${screen.width}x${screen.height}`);
+    log(`Window: ${window.innerWidth}x${window.innerHeight}`);
+    log(`VisualVP: ${window.visualViewport ? window.visualViewport.width + 'x' + window.visualViewport.height : 'N/A'}`);
+    
+    // 监听 visualViewport
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => {
+        log(`VV resize: ${Math.round(window.visualViewport.width)}x${Math.round(window.visualViewport.height)} | offsetTop: ${Math.round(window.visualViewport.offsetTop)}`);
+      });
+      window.visualViewport.addEventListener('scroll', () => {
+        log(`VV scroll: pageTop=${Math.round(window.visualViewport.pageTop)} offsetTop=${Math.round(window.visualViewport.offsetTop)}`);
+      });
+    }
+    
+    // 监听 window resize
+    window.addEventListener('resize', () => {
+      log(`Window resize: ${window.innerWidth}x${window.innerHeight}`);
+    });
+    
+    // 监听 scroll
+    window.addEventListener('scroll', () => {
+      log(`Window scroll: scrollY=${window.scrollY} docScroll=${document.documentElement.scrollTop}`);
+    });
+
+    // ==================== 全屏滚动控制 ====================
+    const sectionsWrapper = document.getElementById('sectionsWrapper');
+    const sections = document.querySelectorAll('.section');
+    const indicators = document.querySelectorAll('.indicator');
+    const totalPages = sections.length;
+    
+    let currentPage = 0;
+    let isAnimating = false;
+    let animationDuration = 800; // 与 CSS transition 时间一致
+    
+    // 触摸相关变量
+    let touchStartY = 0;
+    let touchEndY = 0;
+    let touchStartTime = 0;
+    const swipeThreshold = 50; // 最小滑动距离
+    const swipeTimeThreshold = 300; // 快速滑动的时间阈值
+    
+    // 输入框焦点状态
+    let isInputFocused = false;
+    
+    // 第三页时指示器的固定像素位置
+    let indicatorFixedTop = null;
+
+    // 跳转到指定页面
+    function goToPage(pageIndex, direction = null) {
+      if (isAnimating || pageIndex === currentPage) return;
+      if (pageIndex < 0 || pageIndex >= totalPages) return;
+      
+      isAnimating = true;
+      
+      const prevPage = currentPage;
+      currentPage = pageIndex;
+      
+      const realIndicators = document.querySelector('.page-indicators');
+      
+      // 即将进入第三页：在动画开始前就无感切换
+      if (currentPage === 2 && !fakeIndicatorsEl) {
+        // 立即隐藏真指示器
+        realIndicators.style.visibility = 'hidden';
+        realIndicators.style.opacity = '0';
+        
+        // 立即创建并显示假指示器
+        fakeIndicatorsEl = realIndicators.cloneNode(true);
+        fakeIndicatorsEl.classList.add('fake-indicators');
+        fakeIndicatorsEl.style.visibility = 'visible';
+        fakeIndicatorsEl.style.opacity = '1';
+        fakeIndicatorsEl.style.transition = 'opacity 0.3s ease';
+        document.body.appendChild(fakeIndicatorsEl);
+        
+        // 同步激活状态到第三个点
+        const fakeIndicatorDots = fakeIndicatorsEl.querySelectorAll('.indicator');
+        fakeIndicatorDots.forEach((dot, index) => {
+          dot.classList.toggle('active', index === 2);
+        });
+      }
+      
+      // 离开第三页：无感切换回真指示器
+      if (prevPage === 2 && currentPage !== 2 && fakeIndicatorsEl) {
+        // 立即删除假指示器
+        fakeIndicatorsEl.remove();
+        fakeIndicatorsEl = null;
+        
+        // 立即显示真指示器
+        realIndicators.style.visibility = 'visible';
+        realIndicators.style.opacity = '1';
+      }
+      
+      // 更新 wrapper 位置
+      sectionsWrapper.style.transform = `translateY(-${currentPage * 100}vh)`;
+      
+      // 更新 section 状态
+      sections.forEach((section, index) => {
+        section.classList.remove('active', 'prev');
+        if (index === currentPage) {
+          section.classList.add('active');
+        } else if (index < currentPage) {
+          section.classList.add('prev');
+        }
+      });
+      
+      // 更新指示器（真指示器，虽然在第三页时隐藏但还是要更新状态）
+      indicators.forEach((indicator, index) => {
+        indicator.classList.toggle('active', index === currentPage);
+      });
+      
+      // 动画完成后解锁
+      setTimeout(() => {
+        isAnimating = false;
+      }, animationDuration);
+    }
+
+    // 下一页
+    function nextPage() {
+      if (currentPage < totalPages - 1) {
+        goToPage(currentPage + 1, 'down');
+      }
+    }
+
+    // 上一页
+    function prevPage() {
+      if (currentPage > 0) {
+        goToPage(currentPage - 1, 'up');
+      }
+    }
+
+    // ==================== 鼠标滚轮事件 ====================
+    let wheelTimeout = null;
+    let lastWheelTime = 0;
+    const wheelCooldown = 100; // 滚轮事件冷却时间
+
+    document.addEventListener('wheel', (e) => {
+      if (isInputFocused) return; // 输入框聚焦时不处理滚动
+      
+      e.preventDefault();
+      
+      const now = Date.now();
+      if (now - lastWheelTime < wheelCooldown) return;
+      lastWheelTime = now;
+      
+      if (isAnimating) return;
+      
+      if (e.deltaY > 0) {
+        nextPage();
+      } else if (e.deltaY < 0) {
+        prevPage();
+      }
+    }, { passive: false });
+
+    // ==================== 触摸事件 ====================
+    document.addEventListener('touchstart', (e) => {
+      // 如果是在输入框内触摸，不阻止
+      if (e.target === secretInput || e.target.closest('.secret-input-container')) {
+        return;
+      }
+      
+      touchStartY = e.touches[0].clientY;
+      touchStartTime = Date.now();
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+      if (isInputFocused) return;
+      if (e.target === secretInput || e.target.closest('.secret-input-container')) {
+        return;
+      }
+      
+      // 阻止默认滚动行为
+      e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('touchend', (e) => {
+      if (isInputFocused) return;
+      if (e.target === secretInput || e.target.closest('.secret-input-container')) {
+        return;
+      }
+      
+      touchEndY = e.changedTouches[0].clientY;
+      const touchDuration = Date.now() - touchStartTime;
+      const swipeDistance = touchStartY - touchEndY;
+      
+      // 判断是否为有效滑动
+      const isQuickSwipe = touchDuration < swipeTimeThreshold;
+      const isValidSwipe = Math.abs(swipeDistance) > swipeThreshold;
+      
+      if (isAnimating) return;
+      
+      if (isValidSwipe || (isQuickSwipe && Math.abs(swipeDistance) > 30)) {
+        if (swipeDistance > 0) {
+          // 向上滑动 -> 下一页
+          nextPage();
+        } else {
+          // 向下滑动 -> 上一页
+          prevPage();
+        }
+      }
+    }, { passive: true });
+
+    // ==================== 键盘事件 ====================
+    document.addEventListener('keydown', (e) => {
+      if (isInputFocused) return;
+      if (isAnimating) return;
+      
+      switch(e.key) {
+        case 'ArrowDown':
+        case 'PageDown':
+        case ' ':
+          e.preventDefault();
+          nextPage();
+          break;
+        case 'ArrowUp':
+        case 'PageUp':
+          e.preventDefault();
+          prevPage();
+          break;
+        case 'Home':
+          e.preventDefault();
+          goToPage(0);
+          break;
+        case 'End':
+          e.preventDefault();
+          goToPage(totalPages - 1);
+          break;
+      }
+    });
+
+    // ==================== 指示器点击 ====================
+    indicators.forEach((indicator) => {
+      indicator.addEventListener('click', () => {
+        const pageIndex = parseInt(indicator.dataset.page);
+        goToPage(pageIndex);
+      });
+    });
+
+    // ==================== 输入框焦点管理 ====================
+    
     const secretSection = document.getElementById('secret');
+    const realInputContainer = document.getElementById('realInputContainer');
+    const fakeInput = document.getElementById('fakeInput');
     const secretContainer = document.getElementById('secretContainer');
     const inputWrapper = document.getElementById('inputWrapper');
-    const secretInput = document.getElementById('secretInput');
     const btnWrapper = document.getElementById('btnWrapper');
     const secretBtn = document.getElementById('secretBtn');
-
+    
+    const isMobile = window.innerWidth < 768;
+    
+    // 移动端用顶部的真输入框，桌面端用容器内的桌面输入框
+    const secretInput = isMobile 
+      ? document.getElementById('secretInput') 
+      : document.getElementById('desktopInput');
+    
+    // 立即绑定点击事件
+    log(`isMobile: ${isMobile}`);
+    log(`fakeInput: ${fakeInput}`);
+    
+    if (isMobile && fakeInput) {
+      log('Bindng events to fakeInput...');
+      // 点击假输入框时聚焦真输入框
+      fakeInput.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        log(`FAKE CLICK`);
+        secretInput.focus();
+      });
+      fakeInput.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        log(`FAKE TOUCHEND`);
+        // 延迟一点再 focus，让浏览器处理完 touch 事件
+        setTimeout(() => {
+          secretInput.focus();
+        }, 50);
+      });
+    } else if (fakeInput) {
+      // 桌面端：隐藏假输入框显示层
+      fakeInput.style.display = 'none';
+    }
+    
+    // 移动端：页面加载时就固定所有 section 为 px
+    let fixedPageHeight = window.innerHeight;
+    
+    function lockAllSections() {
+      if (window.innerWidth >= 768) return;
+      
+      fixedPageHeight = window.innerHeight;
+      sections.forEach((s, i) => {
+        s.style.height = fixedPageHeight + 'px';
+        s.style.minHeight = fixedPageHeight + 'px';
+      });
+      sectionsWrapper.style.transform = `translateY(-${currentPage * fixedPageHeight}px)`;
+      log(`All sections locked at ${fixedPageHeight}px`);
+    }
+    
+    if (isMobile) {
+      lockAllSections();
+    }
+    
+    // 修改 goToPage 函数使用固定高度
+    goToPage = function(pageIndex, direction = null) {
+      if (isAnimating || pageIndex === currentPage) return;
+      if (pageIndex < 0 || pageIndex >= totalPages) return;
+      
+      isAnimating = true;
+      const prevPage = currentPage;
+      currentPage = pageIndex;
+      
+      log(`goToPage: ${prevPage} -> ${currentPage}`);
+      
+      const realIndicators = document.querySelector('.page-indicators');
+      
+      // 进入第三页：把指示器改成固定像素定位
+      if (currentPage === 2 && prevPage !== 2) {
+        indicatorFixedTop = fixedPageHeight / 2;
+        realIndicators.style.top = indicatorFixedTop + 'px';
+      }
+      
+      // 离开第三页：恢复百分比定位
+      if (prevPage === 2 && currentPage !== 2) {
+        realIndicators.style.top = '50%';
+        indicatorFixedTop = null;
+      }
+      
+      if (window.innerWidth < 768) {
+        sectionsWrapper.style.transform = `translateY(-${currentPage * fixedPageHeight}px)`;
+      } else {
+        sectionsWrapper.style.transform = `translateY(-${currentPage * 100}vh)`;
+      }
+      
+      sections.forEach((section, index) => {
+        section.classList.remove('active', 'prev');
+        if (index === currentPage) {
+          section.classList.add('active');
+        } else if (index < currentPage) {
+          section.classList.add('prev');
+        }
+      });
+      
+      indicators.forEach((indicator, index) => {
+        indicator.classList.toggle('active', index === currentPage);
+      });
+      
+      setTimeout(() => {
+        isAnimating = false;
+      }, animationDuration);
+    };
+    
+    // 同步真输入框的值到假输入框
+    function syncToFake() {
+      if (!isMobile) return;
+      
+      const fakeText = fakeInput.querySelector('.fake-text');
+      const fakeCursor = fakeInput.querySelector('.fake-cursor');
+      const value = secretInput.value;
+      
+      if (value.length > 0) {
+        fakeText.textContent = value;
+        fakeText.style.color = '#1d1d1f';
+        fakeText.classList.remove('placeholder');
+      } else {
+        fakeText.textContent = 'type something...';
+        fakeText.style.color = 'rgba(0, 0, 0, 0.3)';
+        fakeText.classList.add('placeholder');
+      }
+    }
+    
+    // 实时同步输入内容
     secretInput.addEventListener('input', () => {
+      syncToFake();
+    });
+    
+    secretInput.addEventListener('input', () => {
+      syncToFake();
+      
+      // 原有的 lift 逻辑
       if (secretInput.value.length > 0) {
         secretInput.classList.add('lift');
         inputWrapper.classList.add('lift');
         secretContainer.classList.add('active');
+        syncLiftState(true);
       } else {
         secretInput.classList.remove('lift');
         inputWrapper.classList.remove('lift');
         secretContainer.classList.remove('active');
+        syncLiftState(false);
       }
     });
 
     secretInput.addEventListener('focus', () => {
-      secretInput.classList.add('lift');
-      inputWrapper.classList.add('lift');
-      secretContainer.classList.add('active');
-    });
-
-    secretInput.addEventListener('blur', () => {
-      if (secretInput.value.length === 0) {
-        secretInput.classList.remove('lift');
-        inputWrapper.classList.remove('lift');
-        secretContainer.classList.remove('active');
+      log(`INPUT FOCUS | innerH: ${window.innerHeight} | VV: ${window.visualViewport ? Math.round(window.visualViewport.height) : 'N/A'}`);
+      isInputFocused = true;
+      
+      if (isMobile) {
+        log(`Focus - currentPage: ${currentPage}`);
+        // 假输入框加 lift 和 focused 状态（显示光标和动画）
+        fakeInput.classList.add('lift', 'focused');
+        inputWrapper.classList.add('lift');
+        secretContainer.classList.add('active');
+        
+        // 第三页时指示器淡出
+        if (currentPage === 2) {
+          const indicators = document.querySelector('.page-indicators');
+          indicators.style.opacity = '0';
+        }
+      } else {
+        // 桌面端原有逻辑
+        secretInput.classList.add('lift');
+        inputWrapper.classList.add('lift');
+        secretContainer.classList.add('active');
       }
     });
 
-    secretBtn.addEventListener('mouseenter', () => {
-      secretBtn.classList.add('lift');
-      btnWrapper.classList.add('lift');
+    secretInput.addEventListener('blur', () => {
+      log(`INPUT BLUR | innerH: ${window.innerHeight} | VV: ${window.visualViewport ? Math.round(window.visualViewport.height) : 'N/A'}`);
+      
+      const hasValue = secretInput.value.length > 0;
+      
+      if (isMobile) {
+        // 同步内容到假输入框
+        syncToFake();
+        
+        // 移除假输入框的 focused 状态（隐藏光标）
+        fakeInput.classList.remove('focused');
+        
+        if (!hasValue) {
+          fakeInput.classList.remove('lift');
+          inputWrapper.classList.remove('lift');
+          secretContainer.classList.remove('active');
+        }
+        
+        // 第三页时指示器淡入
+        if (currentPage === 2) {
+          setTimeout(() => {
+            const indicators = document.querySelector('.page-indicators');
+            indicators.style.opacity = '1';
+          }, 200);
+        }
+      } else {
+        // 桌面端
+        if (!hasValue) {
+          secretInput.classList.remove('lift');
+          inputWrapper.classList.remove('lift');
+          secretContainer.classList.remove('active');
+        }
+      }
+      
+      setTimeout(() => {
+        isInputFocused = false;
+      }, 150);
+    });
+    
+    // 只在非输入状态且高度稳定时才更新固定高度
+    let resizeTimeout = null;
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 768) return;
+      if (isInputFocused) return;
+      
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        if (!isInputFocused) {
+          lockAllSections();
+        }
+      }, 500);
     });
 
-    secretBtn.addEventListener('mouseleave', () => {
-      secretBtn.classList.remove('lift');
-      btnWrapper.classList.remove('lift');
-    });
+    // ==================== 原有功能代码 ====================
+    const cardContainer = document.getElementById('cardContainer');
+    const card = document.getElementById('card');
 
+    // 桌面端输入框 input 事件（用于检测内容变化）
+    if (!isMobile) {
+      secretInput.addEventListener('input', () => {
+        if (secretInput.value.length > 0) {
+          secretInput.classList.add('lift');
+          inputWrapper.classList.add('lift');
+          secretContainer.classList.add('active');
+        } else {
+          secretInput.classList.remove('lift');
+          inputWrapper.classList.remove('lift');
+          secretContainer.classList.remove('active');
+        }
+      });
+    }
+
+    // 按钮 hover 效果（仅桌面端）
+    if (!isMobile) {
+      secretBtn.addEventListener('mouseenter', () => {
+        secretBtn.classList.add('lift');
+        btnWrapper.classList.add('lift');
+      });
+
+      secretBtn.addEventListener('mouseleave', () => {
+        secretBtn.classList.remove('lift');
+        btnWrapper.classList.remove('lift');
+      });
+    }
+    
+    // 按钮触摸效果（仅移动端）- 按下浮起，松开落下
+    if (isMobile) {
+      secretBtn.addEventListener('touchstart', (e) => {
+        secretBtn.classList.add('lift');
+        btnWrapper.classList.add('lift');
+      }, { passive: true });
+      
+      secretBtn.addEventListener('touchend', (e) => {
+        secretBtn.classList.remove('lift');
+        btnWrapper.classList.remove('lift');
+      }, { passive: true });
+      
+      secretBtn.addEventListener('touchcancel', (e) => {
+        secretBtn.classList.remove('lift');
+        btnWrapper.classList.remove('lift');
+      }, { passive: true });
+    }
+
+    // 名片翻转
     let flipCount = 0;
-    let currentRotation = { x: 0, y: 0 };
-    let targetRotation = { x: 0, y: 0 };
-    let initialOrientation = null;
-    let orientationCalibrated = false;
-
     card.addEventListener('click', () => {
       flipCount++;
       card.style.transform = `rotateY(${flipCount * 180}deg)`;
     });
 
+    // 名片 3D 效果
+    let currentRotation = { x: 0, y: 0 };
+    let targetRotation = { x: 0, y: 0 };
+    let initialOrientation = null;
+    let orientationCalibrated = false;
+
     document.addEventListener('mousemove', (e) => {
       if (window.innerWidth < 768) return;
+      if (currentPage !== 0) return; // 只在第一页响应
 
       const rect = cardContainer.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
@@ -591,10 +1394,12 @@
       targetRotation.x = Math.max(-maxRotation, Math.min(maxRotation, rotationX));
     });
 
+    // 陀螺仪支持
     let orientationStarted = false;
 
     const handleOrientation = (e) => {
       if (window.innerWidth >= 768) return;
+      if (currentPage !== 0) return;
 
       if (!orientationCalibrated && e.beta !== null && e.gamma !== null) {
         if (!initialOrientation) {
@@ -673,95 +1478,35 @@
     }
     animateRotation();
 
-    window.addEventListener('scroll', () => {
-      const scrollY = window.scrollY;
-      const windowHeight = window.innerHeight;
-
-      const heroProgress = Math.min(1, scrollY / (windowHeight * 0.8));
-      const heroFinalOpacity = Math.max(0, 1 - heroProgress);
-      const heroFinalScale = Math.max(0.85, 1 - heroProgress * 0.15);
-      const heroFinalY = heroProgress * 30;
+    // 提交功能（点击按钮或回车）
+    function handleSubmit() {
+      const value = secretInput.value.toLowerCase().trim();
       
-      cardContainer.style.opacity = heroFinalOpacity;
-      cardContainer.style.filter = `blur(${heroProgress * 3}px)`;
-      
-      contactBtn.style.opacity = heroFinalOpacity;
-      contactBtn.style.transform = `translateY(${heroFinalY}px) scale(${heroFinalScale})`;
-      contactBtn.style.filter = `blur(${heroProgress * 3}px)`;
-
-      const aboutTop = aboutSection.getBoundingClientRect().top;
-      const aboutBottom = aboutSection.getBoundingClientRect().bottom;
-      
-      let aboutOpacity = 0;
-      let aboutScale = 0.92;
-      let aboutY = 40;
-      
-      if (aboutTop < windowHeight * 0.85) {
-        const enterProgress = Math.min(1, (windowHeight * 0.85 - aboutTop) / 400);
-        aboutOpacity = enterProgress;
-        aboutScale = 0.92 + (0.08 * enterProgress);
-        aboutY = 40 * (1 - enterProgress);
-      } else if (aboutTop >= windowHeight * 0.85) {
-        aboutOpacity = 0;
-        aboutScale = 0.92;
-        aboutY = 40;
-      }
-      
-      if (aboutBottom < windowHeight * 0.15) {
-        const exitProgress = Math.max(0, aboutBottom / (windowHeight * 0.15));
-        aboutOpacity = exitProgress;
-        aboutScale = 0.92 + (0.08 * exitProgress);
-        aboutY = -20 * (1 - exitProgress);
-      }
-      
-      aboutSection.style.opacity = aboutOpacity;
-      aboutSection.style.transform = `translateY(${aboutY}px) scale(${aboutScale})`;
-
-      const secretTop = secretSection.getBoundingClientRect().top;
-      const secretBottom = secretSection.getBoundingClientRect().bottom;
-      
-      let secretOpacity = 0;
-      let secretScale = 0.92;
-      let secretY = 40;
-      
-      if (secretTop < windowHeight * 0.85) {
-        const enterProgress = Math.min(1, (windowHeight * 0.85 - secretTop) / 400);
-        secretOpacity = enterProgress;
-        secretScale = 0.92 + (0.08 * enterProgress);
-        secretY = 40 * (1 - enterProgress);
-      } else if (secretTop >= windowHeight * 0.85) {
-        secretOpacity = 0;
-        secretScale = 0.92;
-        secretY = 40;
-      }
-      
-      if (secretBottom < windowHeight * 0.15) {
-        const exitProgress = Math.max(0, secretBottom / (windowHeight * 0.15));
-        secretOpacity = exitProgress;
-        secretScale = 0.92 + (0.08 * exitProgress);
-        secretY = -20 * (1 - exitProgress);
-      }
-      
-      secretSection.style.opacity = secretOpacity;
-      secretSection.style.transform = `translateY(${secretY}px) scale(${secretScale})`;
-    });
-    
-    window.dispatchEvent(new Event('scroll'));
-
-    function checkSecret() {
-      if (secretInput.value.toLowerCase().trim() === 'sherman') {
+      // 如果是彩蛋密码，触发彩蛋
+      if (value === 'sherman') {
         triggerEasterEgg();
-        secretInput.value = '';
-        secretInput.classList.remove('lift');
-        inputWrapper.classList.remove('lift');
-        secretContainer.classList.remove('active');
       }
+      
+      // 无论输入什么，都清空
+      secretInput.value = '';
+      inputWrapper.classList.remove('lift');
+      secretContainer.classList.remove('active');
+      
+      // 同步清空假输入框
+      if (isMobile) {
+        syncToFake();
+        fakeInput.classList.remove('lift', 'focused');
+      }
+      
+      // 收起键盘
+      secretInput.blur();
     }
 
-    secretBtn.addEventListener('click', checkSecret);
+    secretBtn.addEventListener('click', handleSubmit);
     secretInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
-        checkSecret();
+        e.preventDefault();
+        handleSubmit();
       }
     });
 
@@ -823,6 +1568,9 @@
         animateParticle();
       }
     }
+
+    // 初始化第一页状态
+    sections[0].classList.add('active');
   </script>
 
 </body>
