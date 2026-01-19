@@ -734,7 +734,7 @@
 </head>
 <body>
 
-  <div class="version">v2.2.9</div>
+  <div class="version">v2.3.0</div>
   
   <!-- 调试面板 -->
   <button class="debug-copy" id="debugCopy" onclick="copyDebug()">COPY</button>
@@ -1515,16 +1515,25 @@
       
       // 查询彩蛋 API
       if (value) {
-        try {
-          const res = await fetch(`${EASTER_EGG_API}/check/${encodeURIComponent(value)}`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.found && data.egg && data.egg.elements && data.egg.elements.length > 0) {
-              triggerEasterEgg(data.egg.elements);
+        const doFetch = async () => {
+          try {
+            const res = await fetch(`${EASTER_EGG_API}/check/${encodeURIComponent(value)}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.found && data.egg && data.egg.elements && data.egg.elements.length > 0) {
+                triggerEasterEgg(data.egg.elements);
+              }
             }
+          } catch (err) {
+            log('API error: ' + err.message);
           }
-        } catch (err) {
-          log('API error: ' + err.message);
+        };
+        
+        // 移动端等键盘收起后再请求
+        if (isMobile) {
+          setTimeout(doFetch, 100);
+        } else {
+          doFetch();
         }
       }
     }
