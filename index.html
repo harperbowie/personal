@@ -734,7 +734,7 @@
 </head>
 <body>
 
-  <div class="version">v2.2.7</div>
+  <div class="version">v2.2.8</div>
   
   <!-- 调试面板 -->
   <button class="debug-copy" id="debugCopy" onclick="copyDebug()">COPY</button>
@@ -1490,7 +1490,7 @@
     animateRotation();
 
     // 彩蛋 API
-    const EASTER_EGG_API = 'https://easter-eggs.harper-ops-work.workers.dev';
+    const EASTER_EGG_API = 'https://api.720901.xyz';
 
     // 提交功能（点击按钮或回车）
     async function handleSubmit() {
@@ -1515,45 +1515,18 @@
       
       // 再查询彩蛋 API
       if (value) {
-        const fetchEgg = () => {
-          const url = `${EASTER_EGG_API}/check/${encodeURIComponent(value)}`;
-          log('Fetching: ' + url);
-          
-          const xhr = new XMLHttpRequest();
-          xhr.open('GET', url, true);
-          xhr.timeout = 10000;
-          
-          xhr.onload = function() {
-            log('XHR status: ' + xhr.status);
-            if (xhr.status === 200) {
-              try {
-                const data = JSON.parse(xhr.responseText);
-                log('API found: ' + data.found);
-                if (data.found && data.egg && data.egg.elements && data.egg.elements.length > 0) {
-                  log('Triggering ' + data.egg.elements.length + ' elements');
-                  triggerEasterEgg(data.egg.elements);
-                }
-              } catch (e) {
-                log('Parse error: ' + e.message);
-              }
+    // 查询彩蛋 API
+      if (value) {
+        try {
+          const res = await fetch(`${EASTER_EGG_API}/check/${encodeURIComponent(value)}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.found && data.egg && data.egg.elements && data.egg.elements.length > 0) {
+              triggerEasterEgg(data.egg.elements);
             }
-          };
-          
-          xhr.onerror = function() {
-            log('XHR error');
-          };
-          
-          xhr.ontimeout = function() {
-            log('XHR timeout');
-          };
-          
-          xhr.send();
-        };
-        
-        if (isMobile) {
-          setTimeout(fetchEgg, 300);
-        } else {
-          fetchEgg();
+          }
+        } catch (err) {
+          log('API error: ' + err.message);
         }
       }
     }
