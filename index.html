@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Harper Bowie</title>
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
   <style>
     * {
       margin: 0;
@@ -678,6 +679,16 @@
       50% { transform: translate(-50%, -50%) scale(1.2); }
     }
 
+    /* 彩蛋动画 */
+    @keyframes eggFadeIn {
+      from { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+      to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+    @keyframes eggFadeOut {
+      from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      to { opacity: 0; transform: translate(-50%, -50%) scale(1.2); }
+    }
+
     .firework {
       position: fixed;
       width: 4px;
@@ -723,7 +734,7 @@
 </head>
 <body>
 
-  <div class="version">v2.1.8</div>
+  <div class="version">v2.2.2</div>
   
   <!-- 调试面板 -->
   <button class="debug-copy" id="debugCopy" onclick="copyDebug()">COPY</button>
@@ -1478,17 +1489,18 @@
     }
     animateRotation();
 
+    // 彩蛋 API
+    const EASTER_EGG_API = 'https://easter-eggs.harper-ops-work.workers.dev';
+
     // 提交功能（点击按钮或回车）
-    function handleSubmit() {
+    async function handleSubmit() {
+      log('handleSubmit called');
       const value = secretInput.value.toLowerCase().trim();
+      log('value: ' + value);
       
-      // 如果是彩蛋密码，触发彩蛋
-      if (value === 'sherman') {
-        triggerEasterEgg();
-      }
-      
-      // 无论输入什么，都清空
+      // 先清空输入框
       secretInput.value = '';
+      secretInput.classList.remove('lift');
       inputWrapper.classList.remove('lift');
       secretContainer.classList.remove('active');
       
@@ -1500,6 +1512,19 @@
       
       // 收起键盘
       secretInput.blur();
+      
+      // 再查询彩蛋 API
+      if (value) {
+        try {
+          const res = await fetch(`${EASTER_EGG_API}/check/${encodeURIComponent(value)}`);
+          if (res.ok) {
+            const egg = await res.json();
+            if (egg && egg.elements && egg.elements.length > 0) {
+              triggerEasterEgg(egg.elements);
+            }
+          }
+        } catch (err) {}
+      }
     }
 
     secretBtn.addEventListener('click', handleSubmit);
@@ -1510,7 +1535,81 @@
       }
     });
 
-    function triggerEasterEgg() {
+    // 触发彩蛋动画
+    function triggerEasterEgg(elements) {
+      elements.forEach((el, index) => {
+        setTimeout(() => {
+          playElement(el, index);
+        }, (el.delay || 0) * 1000);
+      });
+    }
+
+    // 播放单个元素
+    function playElement(el, zIndex = 0) {
+      const sizeMap = { small: 50, medium: 100, large: 180, xlarge: 280, xxlarge: 400, xxxlarge: 550 };
+      const size = sizeMap[el.size] || sizeMap.medium;
+
+      const container = document.createElement('div');
+      container.style.cssText = `
+        position: fixed; top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: ${1000 + zIndex}; pointer-events: none;
+        animation: eggFadeIn 0.3s ease-out;
+      `;
+
+      if (el.type === 'emoji') {
+        container.style.fontSize = size + 'px';
+        container.textContent = el.value;
+        document.body.appendChild(container);
+        setTimeout(() => {
+          container.style.animation = 'eggFadeOut 0.5s ease-out forwards';
+          setTimeout(() => container.remove(), 500);
+        }, 2000);
+
+      } else if (el.type === 'lucide') {
+        container.innerHTML = getLucideSvg(el.value, size);
+        document.body.appendChild(container);
+        setTimeout(() => {
+          container.style.animation = 'eggFadeOut 0.5s ease-out forwards';
+          setTimeout(() => container.remove(), 500);
+        }, 2000);
+
+      } else if (el.type === 'lottie' && el.value) {
+        const player = document.createElement('lottie-player');
+        player.setAttribute('src', el.value);
+        player.setAttribute('background', 'transparent');
+        player.setAttribute('speed', '1');
+        player.style.width = size + 'px';
+        player.style.height = size + 'px';
+        container.appendChild(player);
+        document.body.appendChild(container);
+        
+        player.addEventListener('ready', () => player.play());
+        player.addEventListener('complete', () => {
+          container.style.animation = 'eggFadeOut 0.3s ease-out forwards';
+          setTimeout(() => container.remove(), 300);
+        });
+        setTimeout(() => { if (container.parentNode) container.remove(); }, 5000);
+      }
+    }
+
+    // Lucide 图标 SVG
+    function getLucideSvg(name, size) {
+      const svgs = {
+        'heart': '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+        'star': '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+        'sun': '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+        'moon': '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+        'sparkles': '<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3zM5 3v4M19 17v4M3 5h4M17 19h4"/>',
+        'flame': '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+        'rocket': '<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09zM12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2zM9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>',
+        'gift': '<polyline points="20 12 20 22 4 22 4 12"/><rect width="20" height="5" x="2" y="7"/><line x1="12" x2="12" y1="22" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>'
+      };
+      const path = svgs[name] || svgs['heart'];
+      return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="#1d1d1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+    }
+
+    function triggerOldEasterEgg() {
       const heart = document.createElement('div');
       heart.className = 'easter-egg';
       heart.textContent = '❤️';
