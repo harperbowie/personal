@@ -338,10 +338,6 @@
     @media (max-width: 768px) {
       .secret {
         padding-top: 80px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
       }
       
       /* 隐藏桌面端 input */
@@ -379,10 +375,12 @@
         color: transparent;
       }
       
-      /* 假输入框容器：不用绝对定位，用 flex 居中 */
+      /* 假输入框容器：绝对定位居中 */
       .secret-input-container {
-        position: static;
-        transform: none;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
       }
       
       /* 假输入框的内容区域 */
@@ -736,7 +734,7 @@
 </head>
 <body>
 
-  <div class="version">v2.3.6</div>
+  <div class="version">v2.3.7</div>
   
   <!-- 调试面板 -->
   <button class="debug-copy" id="debugCopy" onclick="copyDebug()">COPY</button>
