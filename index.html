@@ -734,7 +734,7 @@
 </head>
 <body>
 
-  <div class="version">v2.3.0</div>
+  <div class="version">v2.3.1</div>
   
   <!-- 调试面板 -->
   <button class="debug-copy" id="debugCopy" onclick="copyDebug()">COPY</button>
@@ -1517,7 +1517,9 @@
       if (value) {
         const doFetch = async () => {
           try {
+            const t0 = Date.now();
             const res = await fetch(`${EASTER_EGG_API}/check/${encodeURIComponent(value)}`);
+            log('API took: ' + (Date.now() - t0) + 'ms');
             if (res.ok) {
               const data = await res.json();
               if (data.found && data.egg && data.egg.elements && data.egg.elements.length > 0) {
