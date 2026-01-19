@@ -734,7 +734,7 @@
 </head>
 <body>
 
-  <div class="version">v2.3.1</div>
+  <div class="version">v2.3.3</div>
   
   <!-- 调试面板 -->
   <button class="debug-copy" id="debugCopy" onclick="copyDebug()">COPY</button>
@@ -1163,6 +1163,11 @@
       
       log(`goToPage: ${prevPage} -> ${currentPage}`);
       
+      // 进入第二页时预加载彩蛋数据
+      if (currentPage >= 1) {
+        preloadEggs();
+      }
+      
       const realIndicators = document.querySelector('.page-indicators');
       
       // 进入第三页：把指示器改成固定像素定位
@@ -1491,9 +1496,32 @@
 
     // 彩蛋 API
     const EASTER_EGG_API = 'https://api.720901.xyz';
+    
+    // 预加载的彩蛋数据
+    let eggsCache = {};
+    let eggsLoading = false;
+    
+    // 预加载所有彩蛋（进入第二页时调用）
+    async function preloadEggs() {
+      if (eggsLoading || Object.keys(eggsCache).length > 0) return;
+      eggsLoading = true;
+      try {
+        const res = await fetch(`${EASTER_EGG_API}/eggs`);
+        if (res.ok) {
+          const eggs = await res.json();
+          eggs.forEach(egg => {
+            eggsCache[egg.keyword.toLowerCase()] = egg;
+          });
+          log('Preloaded ' + eggs.length + ' eggs');
+        }
+      } catch (err) {
+        log('Preload error: ' + err.message);
+        eggsLoading = false;
+      }
+    }
 
     // 提交功能（点击按钮或回车）
-    async function handleSubmit() {
+    function handleSubmit() {
       log('handleSubmit called');
       const value = secretInput.value.toLowerCase().trim();
       log('value: ' + value);
@@ -1513,29 +1541,11 @@
       // 收起键盘
       secretInput.blur();
       
-      // 查询彩蛋 API
+      // 本地查询彩蛋
       if (value) {
-        const doFetch = async () => {
-          try {
-            const t0 = Date.now();
-            const res = await fetch(`${EASTER_EGG_API}/check/${encodeURIComponent(value)}`);
-            log('API took: ' + (Date.now() - t0) + 'ms');
-            if (res.ok) {
-              const data = await res.json();
-              if (data.found && data.egg && data.egg.elements && data.egg.elements.length > 0) {
-                triggerEasterEgg(data.egg.elements);
-              }
-            }
-          } catch (err) {
-            log('API error: ' + err.message);
-          }
-        };
-        
-        // 移动端等键盘收起后再请求
-        if (isMobile) {
-          setTimeout(doFetch, 100);
-        } else {
-          doFetch();
+        const egg = eggsCache[value];
+        if (egg && egg.elements && egg.elements.length > 0) {
+          triggerEasterEgg(egg.elements);
         }
       }
     }
