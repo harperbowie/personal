@@ -734,7 +734,7 @@
 </head>
 <body>
 
-  <div class="version">v2.2.5</div>
+  <div class="version">v2.2.6</div>
   
   <!-- 调试面板 -->
   <button class="debug-copy" id="debugCopy" onclick="copyDebug()">COPY</button>
@@ -1518,18 +1518,27 @@
         const fetchEgg = async () => {
           try {
             log('Fetching API for: ' + value);
-            const res = await fetch(`${EASTER_EGG_API}/check/${encodeURIComponent(value)}`);
+            const url = `${EASTER_EGG_API}/check/${encodeURIComponent(value)}`;
+            log('URL: ' + url);
+            
+            const res = await fetch(url);
             log('API response status: ' + res.status);
+            
+            const text = await res.text();
+            log('API response length: ' + text.length);
+            
             if (res.ok) {
-              const data = await res.json();
+              const data = JSON.parse(text);
               log('API response: found=' + data.found);
               if (data.found && data.egg && data.egg.elements && data.egg.elements.length > 0) {
                 log('Triggering easter egg with ' + data.egg.elements.length + ' elements');
                 triggerEasterEgg(data.egg.elements);
+              } else {
+                log('No elements found or egg not found');
               }
             }
           } catch (err) {
-            log('API error: ' + err.message);
+            log('API error: ' + err.name + ' - ' + err.message);
           }
         };
         
