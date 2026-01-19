@@ -734,7 +734,7 @@
 </head>
 <body>
 
-  <div class="version">v2.2.4</div>
+  <div class="version">v2.2.5</div>
   
   <!-- 调试面板 -->
   <button class="debug-copy" id="debugCopy" onclick="copyDebug()">COPY</button>
@@ -1513,22 +1513,31 @@
       // 收起键盘
       secretInput.blur();
       
-      // 再查询彩蛋 API
+      // 再查询彩蛋 API - 移动端延迟执行，等键盘完全收起
       if (value) {
-        try {
-          log('Fetching API for: ' + value);
-          const res = await fetch(`${EASTER_EGG_API}/check/${encodeURIComponent(value)}`);
-          log('API response status: ' + res.status);
-          if (res.ok) {
-            const data = await res.json();
-            log('API response: found=' + data.found);
-            if (data.found && data.egg && data.egg.elements && data.egg.elements.length > 0) {
-              log('Triggering easter egg with ' + data.egg.elements.length + ' elements');
-              triggerEasterEgg(data.egg.elements);
+        const fetchEgg = async () => {
+          try {
+            log('Fetching API for: ' + value);
+            const res = await fetch(`${EASTER_EGG_API}/check/${encodeURIComponent(value)}`);
+            log('API response status: ' + res.status);
+            if (res.ok) {
+              const data = await res.json();
+              log('API response: found=' + data.found);
+              if (data.found && data.egg && data.egg.elements && data.egg.elements.length > 0) {
+                log('Triggering easter egg with ' + data.egg.elements.length + ' elements');
+                triggerEasterEgg(data.egg.elements);
+              }
             }
+          } catch (err) {
+            log('API error: ' + err.message);
           }
-        } catch (err) {
-          log('API error: ' + err.message);
+        };
+        
+        if (isMobile) {
+          // 移动端等待键盘收起后再请求
+          setTimeout(fetchEgg, 300);
+        } else {
+          fetchEgg();
         }
       }
     }
