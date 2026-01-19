@@ -1520,10 +1520,11 @@
           const res = await fetch(`${EASTER_EGG_API}/check/${encodeURIComponent(value)}`);
           log('API response status: ' + res.status);
           if (res.ok) {
-            const egg = await res.json();
-            log('API response: ' + JSON.stringify(egg));
-            if (egg && egg.elements && egg.elements.length > 0) {
-              triggerEasterEgg(egg.elements);
+            const data = await res.json();
+            log('API response: found=' + data.found);
+            if (data.found && data.egg && data.egg.elements && data.egg.elements.length > 0) {
+              log('Triggering easter egg with ' + data.egg.elements.length + ' elements');
+              triggerEasterEgg(data.egg.elements);
             }
           }
         } catch (err) {
