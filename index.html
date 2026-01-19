@@ -360,7 +360,7 @@
         padding: 0 16px;
         border: none;
         border-radius: 14px;
-        font-size: 16px; /* iOS 需要 16px 以上才不会自动缩放 */
+        font-size: 16px;
         outline: none;
         width: 280px;
         height: 50px;
@@ -375,10 +375,10 @@
         color: transparent;
       }
       
-      /* 假输入框容器：绝对定位居中 */
+      /* 假输入框容器：在中间，始终可见 */
       .secret-input-container {
         position: absolute;
-        top: 50%;
+        top: 45%;
         left: 50%;
         transform: translate(-50%, -50%);
       }
@@ -462,6 +462,13 @@
       /* 桌面端 lift 状态时隐藏 placeholder */
       .desktop-input.lift::placeholder {
         opacity: 0;
+      }
+    }
+
+    /* iOS Safari 专用修复 */
+    @media (max-width: 768px) {
+      .ios .secret-input-container {
+        top: 50%;
       }
     }
 
@@ -734,7 +741,7 @@
 </head>
 <body>
 
-  <div class="version">v2.3.7</div>
+  <div class="version">v2.3.9</div>
   
   <!-- 调试面板 -->
   <button class="debug-copy" id="debugCopy" onclick="copyDebug()">COPY</button>
@@ -807,6 +814,14 @@
   </div>
 
   <script>
+    // ==================== iOS 检测和样式修复 ====================
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    
+    if (isIOS) {
+      document.documentElement.classList.add('ios');
+    }
+    
     // ==================== 调试工具 ====================
     const debugPanel = document.getElementById('debugPanel');
     let debugLogs = [];
