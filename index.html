@@ -734,7 +734,7 @@
 </head>
 <body>
 
-  <div class="version">v2.3.3</div>
+  <div class="version">v2.3.4</div>
   
   <!-- 调试面板 -->
   <button class="debug-copy" id="debugCopy" onclick="copyDebug()">COPY</button>
@@ -1412,27 +1412,18 @@
 
     // 陀螺仪支持
     let orientationStarted = false;
+    let lastOrientationData = null;
 
     const handleOrientation = (e) => {
       if (window.innerWidth >= 768) return;
       if (currentPage !== 0) return;
+      if (e.beta === null || e.gamma === null) return;
 
-      if (!orientationCalibrated && e.beta !== null && e.gamma !== null) {
-        if (!initialOrientation) {
-          initialOrientation = { beta: e.beta, gamma: e.gamma, count: 0 };
-          return;
-        }
-        
-        if (initialOrientation.count < 3) {
-          initialOrientation.count++;
-          return;
-        }
-        
-        orientationCalibrated = true;
-        return;
-      }
+      // 保存最新的方向数据
+      lastOrientationData = { beta: e.beta, gamma: e.gamma };
 
-      if (!orientationCalibrated || e.beta === null || e.gamma === null) return;
+      // 还没校准就不动
+      if (!orientationCalibrated) return;
 
       const deltaGamma = e.gamma - initialOrientation.gamma;
       const deltaBeta = e.beta - initialOrientation.beta;
@@ -1440,6 +1431,16 @@
       const maxRotation = 25;
       targetRotation.y = Math.max(-maxRotation, Math.min(maxRotation, deltaGamma * 1.5));
       targetRotation.x = Math.max(-maxRotation, Math.min(maxRotation, -deltaBeta * 1.5));
+    };
+
+    // 用户交互时校准陀螺仪
+    const calibrateOrientation = () => {
+      if (orientationCalibrated) return;
+      if (lastOrientationData) {
+        initialOrientation = { ...lastOrientationData };
+        orientationCalibrated = true;
+        log('Orientation calibrated: beta=' + initialOrientation.beta.toFixed(1) + ' gamma=' + initialOrientation.gamma.toFixed(1));
+      }
     };
 
     const startOrientation = () => {
@@ -1453,6 +1454,9 @@
       
       window.addEventListener('deviceorientation', handleOrientation, true);
       window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+      
+      // 用户首次触摸时校准
+      document.addEventListener('touchstart', calibrateOrientation, { once: true });
     };
 
     const requestPermission = () => {
