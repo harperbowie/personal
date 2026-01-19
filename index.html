@@ -28,73 +28,6 @@
       height: 100%;
     }
 
-    .version {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      font-size: 12px;
-      color: #86868b;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      z-index: 100;
-    }
-
-    /* 调试面板 */
-    .debug-panel {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(0, 0, 0, 0.85);
-      color: #0f0;
-      font-family: monospace;
-      font-size: 11px;
-      padding: 10px;
-      z-index: 9999;
-      max-height: 30vh;
-      overflow-y: auto;
-      display: none;
-    }
-    
-    .debug-panel.show {
-      display: block;
-    }
-    
-    .debug-panel div {
-      margin: 2px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      padding: 2px 0;
-    }
-    
-    .debug-toggle {
-      position: fixed;
-      top: 20px;
-      right: 60px;
-      background: rgba(0,0,0,0.6);
-      color: #fff;
-      border: none;
-      padding: 5px 10px;
-      font-size: 10px;
-      border-radius: 4px;
-      z-index: 9999;
-    }
-    
-    .debug-copy {
-      position: fixed;
-      top: 20px;
-      right: 120px;
-      background: rgba(0,100,0,0.8);
-      color: #fff;
-      border: none;
-      padding: 5px 10px;
-      font-size: 10px;
-      border-radius: 4px;
-      z-index: 9999;
-    }
-    
-    .debug-copy.copied {
-      background: rgba(0,150,0,1);
-    }
-
     /* 页面指示器 */
     .page-indicators {
       position: fixed;
@@ -749,13 +682,6 @@
 </head>
 <body>
 
-  <div class="version">v2.4.3</div>
-  
-  <!-- 调试面板 -->
-  <button class="debug-copy" id="debugCopy" onclick="copyDebug()">COPY</button>
-  <button class="debug-toggle" onclick="toggleDebug()">DEBUG</button>
-  <div class="debug-panel" id="debugPanel"></div>
-
   <!-- 页面指示器 -->
   <div class="page-indicators">
     <div class="indicator active" data-page="0"></div>
@@ -830,76 +756,6 @@
       document.documentElement.classList.add('ios');
     }
     
-    // ==================== 调试工具 ====================
-    const debugPanel = document.getElementById('debugPanel');
-    let debugLogs = [];
-    
-    function toggleDebug() {
-      debugPanel.classList.toggle('show');
-    }
-    
-    function copyDebug() {
-      const text = debugLogs.join('\n');
-      
-      // 创建一个全屏文本框让用户手动复制
-      const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:99999;padding:20px;display:flex;flex-direction:column;';
-      
-      const textarea = document.createElement('textarea');
-      textarea.value = text;
-      textarea.style.cssText = 'flex:1;width:100%;font-family:monospace;font-size:11px;background:#111;color:#0f0;border:1px solid #333;padding:10px;resize:none;';
-      textarea.readOnly = true;
-      
-      const closeBtn = document.createElement('button');
-      closeBtn.textContent = '关闭';
-      closeBtn.style.cssText = 'margin-top:10px;padding:12px;font-size:16px;background:#333;color:#fff;border:none;border-radius:8px;';
-      closeBtn.onclick = () => overlay.remove();
-      
-      overlay.appendChild(textarea);
-      overlay.appendChild(closeBtn);
-      document.body.appendChild(overlay);
-      
-      // 自动选中文本
-      textarea.focus();
-      textarea.select();
-    }
-    
-    function log(msg) {
-      const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 });
-      const entry = `[${time}] ${msg}`;
-      debugLogs.push(entry);
-      if (debugLogs.length > 50) debugLogs.shift();
-      debugPanel.innerHTML = debugLogs.map(l => `<div>${l}</div>`).join('');
-      debugPanel.scrollTop = debugPanel.scrollHeight;
-      console.log(entry);
-    }
-    
-    // 初始信息
-    log(`UA: ${navigator.userAgent.slice(0, 80)}...`);
-    log(`Screen: ${screen.width}x${screen.height}`);
-    log(`Window: ${window.innerWidth}x${window.innerHeight}`);
-    log(`VisualVP: ${window.visualViewport ? window.visualViewport.width + 'x' + window.visualViewport.height : 'N/A'}`);
-    
-    // 监听 visualViewport
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', () => {
-        log(`VV resize: ${Math.round(window.visualViewport.width)}x${Math.round(window.visualViewport.height)} | offsetTop: ${Math.round(window.visualViewport.offsetTop)}`);
-      });
-      window.visualViewport.addEventListener('scroll', () => {
-        log(`VV scroll: pageTop=${Math.round(window.visualViewport.pageTop)} offsetTop=${Math.round(window.visualViewport.offsetTop)}`);
-      });
-    }
-    
-    // 监听 window resize
-    window.addEventListener('resize', () => {
-      log(`Window resize: ${window.innerWidth}x${window.innerHeight}`);
-    });
-    
-    // 监听 scroll
-    window.addEventListener('scroll', () => {
-      log(`Window scroll: scrollY=${window.scrollY} docScroll=${document.documentElement.scrollTop}`);
-    });
-
     // ==================== 全屏滚动控制 ====================
     const sectionsWrapper = document.getElementById('sectionsWrapper');
     const sections = document.querySelectorAll('.section');
@@ -1130,22 +986,17 @@
       : document.getElementById('desktopInput');
     
     // 立即绑定点击事件
-    log(`isMobile: ${isMobile}`);
-    log(`fakeInput: ${fakeInput}`);
     
     if (isMobile && fakeInput) {
-      log('Bindng events to fakeInput...');
       // 点击假输入框时聚焦真输入框
       fakeInput.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        log(`FAKE CLICK`);
         secretInput.focus();
       });
       fakeInput.addEventListener('touchend', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        log(`FAKE TOUCHEND`);
         // Safari 要求 focus 必须在同步代码中调用
         secretInput.focus();
       });
@@ -1166,7 +1017,6 @@
         s.style.minHeight = fixedPageHeight + 'px';
       });
       sectionsWrapper.style.transform = `translateY(-${currentPage * fixedPageHeight}px)`;
-      log(`All sections locked at ${fixedPageHeight}px`);
     }
     
     if (isMobile) {
@@ -1182,7 +1032,6 @@
       const prevPage = currentPage;
       currentPage = pageIndex;
       
-      log(`goToPage: ${prevPage} -> ${currentPage}`);
       
       // 进入第二页时预加载彩蛋数据
       if (currentPage >= 1) {
@@ -1269,11 +1118,9 @@
     });
 
     secretInput.addEventListener('focus', () => {
-      log(`INPUT FOCUS | innerH: ${window.innerHeight} | VV: ${window.visualViewport ? Math.round(window.visualViewport.height) : 'N/A'}`);
       isInputFocused = true;
       
       if (isMobile) {
-        log(`Focus - currentPage: ${currentPage}`);
         // 假输入框加 lift 和 focused 状态（显示光标和动画）
         fakeInput.classList.add('lift', 'focused');
         inputWrapper.classList.add('lift');
@@ -1293,7 +1140,6 @@
     });
 
     secretInput.addEventListener('blur', () => {
-      log(`INPUT BLUR | innerH: ${window.innerHeight} | VV: ${window.visualViewport ? Math.round(window.visualViewport.height) : 'N/A'}`);
       
       const hasValue = secretInput.value.length > 0;
       
@@ -1452,7 +1298,6 @@
           
           initialOrientation = { beta: avgBeta, gamma: avgGamma };
           orientationCalibrated = true;
-          log('Orientation calibrated: beta=' + avgBeta.toFixed(1) + ' gamma=' + avgGamma.toFixed(1));
         }
         return;
       }
@@ -1480,22 +1325,17 @@
     };
 
     const requestPermission = () => {
-      log('requestPermission called');
       if (typeof DeviceOrientationEvent !== 'undefined' && 
           typeof DeviceOrientationEvent.requestPermission === 'function') {
-        log('Requesting iOS permission...');
         DeviceOrientationEvent.requestPermission()
           .then(response => {
-            log('Permission response: ' + response);
             if (response === 'granted') {
               startOrientation();
             }
           })
           .catch(err => {
-            log('Permission error: ' + err.message);
           });
       } else {
-        log('No permission needed, starting orientation');
         startOrientation();
       }
     };
@@ -1505,7 +1345,6 @@
           typeof DeviceOrientationEvent.requestPermission === 'function') {
         // iOS 需要用户交互才能请求权限
         const handleFirstInteraction = () => {
-          log('First interaction detected');
           requestPermission();
         };
         document.addEventListener('touchend', handleFirstInteraction, { once: true });
@@ -1542,19 +1381,15 @@
           eggs.forEach(egg => {
             eggsCache[egg.keyword.toLowerCase()] = egg;
           });
-          log('Preloaded ' + eggs.length + ' eggs');
         }
       } catch (err) {
-        log('Preload error: ' + err.message);
         eggsLoading = false;
       }
     }
 
     // 提交功能（点击按钮或回车）
     function handleSubmit() {
-      log('handleSubmit called');
       const value = secretInput.value.toLowerCase().trim();
-      log('value: ' + value);
       
       // 先清空输入框
       secretInput.value = '';
