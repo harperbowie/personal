@@ -734,7 +734,7 @@
 </head>
 <body>
 
-  <div class="version">v2.2.6</div>
+  <div class="version">v2.2.7</div>
   
   <!-- 调试面板 -->
   <button class="debug-copy" id="debugCopy" onclick="copyDebug()">COPY</button>
@@ -1513,37 +1513,44 @@
       // 收起键盘
       secretInput.blur();
       
-      // 再查询彩蛋 API - 移动端延迟执行，等键盘完全收起
+      // 再查询彩蛋 API
       if (value) {
-        const fetchEgg = async () => {
-          try {
-            log('Fetching API for: ' + value);
-            const url = `${EASTER_EGG_API}/check/${encodeURIComponent(value)}`;
-            log('URL: ' + url);
-            
-            const res = await fetch(url);
-            log('API response status: ' + res.status);
-            
-            const text = await res.text();
-            log('API response length: ' + text.length);
-            
-            if (res.ok) {
-              const data = JSON.parse(text);
-              log('API response: found=' + data.found);
-              if (data.found && data.egg && data.egg.elements && data.egg.elements.length > 0) {
-                log('Triggering easter egg with ' + data.egg.elements.length + ' elements');
-                triggerEasterEgg(data.egg.elements);
-              } else {
-                log('No elements found or egg not found');
+        const fetchEgg = () => {
+          const url = `${EASTER_EGG_API}/check/${encodeURIComponent(value)}`;
+          log('Fetching: ' + url);
+          
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', url, true);
+          xhr.timeout = 10000;
+          
+          xhr.onload = function() {
+            log('XHR status: ' + xhr.status);
+            if (xhr.status === 200) {
+              try {
+                const data = JSON.parse(xhr.responseText);
+                log('API found: ' + data.found);
+                if (data.found && data.egg && data.egg.elements && data.egg.elements.length > 0) {
+                  log('Triggering ' + data.egg.elements.length + ' elements');
+                  triggerEasterEgg(data.egg.elements);
+                }
+              } catch (e) {
+                log('Parse error: ' + e.message);
               }
             }
-          } catch (err) {
-            log('API error: ' + err.name + ' - ' + err.message);
-          }
+          };
+          
+          xhr.onerror = function() {
+            log('XHR error');
+          };
+          
+          xhr.ontimeout = function() {
+            log('XHR timeout');
+          };
+          
+          xhr.send();
         };
         
         if (isMobile) {
-          // 移动端等待键盘收起后再请求
           setTimeout(fetchEgg, 300);
         } else {
           fetchEgg();
