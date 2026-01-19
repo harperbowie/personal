@@ -467,9 +467,15 @@
 
     /* iOS Safari 专用修复 */
     @media (max-width: 768px) {
+      .ios .secret {
+        width: 100%;
+        overflow: visible;
+      }
       .ios .secret-input-container {
+        position: absolute;
         top: 50%;
         left: 50%;
+        right: auto;
         transform: translate(-50%, -50%);
       }
     }
@@ -743,7 +749,7 @@
 </head>
 <body>
 
-  <div class="version">v2.4.0</div>
+  <div class="version">v2.4.1</div>
   
   <!-- 调试面板 -->
   <button class="debug-copy" id="debugCopy" onclick="copyDebug()">COPY</button>
