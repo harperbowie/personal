@@ -1035,7 +1035,7 @@
       
       // 进入第二页时预加载彩蛋数据
       if (currentPage >= 1) {
-        preloadEggs();
+        preloadKeywords();
       }
       
       const realIndicators = document.querySelector('.page-indicators');
@@ -1366,29 +1366,26 @@
     // 彩蛋 API
     const EASTER_EGG_API = 'https://api.720901.xyz';
     
-    // 预加载的彩蛋数据
-    let eggsCache = {};
-    let eggsLoading = false;
+    // 预加载的关键词列表
+    let keywordsCache = [];
+    let keywordsLoading = false;
     
-    // 预加载所有彩蛋（进入第二页时调用）
-    async function preloadEggs() {
-      if (eggsLoading || Object.keys(eggsCache).length > 0) return;
-      eggsLoading = true;
+    // 预加载关键词列表（进入第二页时调用）
+    async function preloadKeywords() {
+      if (keywordsLoading || keywordsCache.length > 0) return;
+      keywordsLoading = true;
       try {
-        const res = await fetch(`${EASTER_EGG_API}/eggs`);
+        const res = await fetch(`${EASTER_EGG_API}/keywords`);
         if (res.ok) {
-          const eggs = await res.json();
-          eggs.forEach(egg => {
-            eggsCache[egg.keyword.toLowerCase()] = egg;
-          });
+          keywordsCache = await res.json();
         }
       } catch (err) {
-        eggsLoading = false;
+        keywordsLoading = false;
       }
     }
 
     // 提交功能（点击按钮或回车）
-    function handleSubmit() {
+    async function handleSubmit() {
       const value = secretInput.value.toLowerCase().trim();
       
       // 先清空输入框
@@ -1406,11 +1403,18 @@
       // 收起键盘
       secretInput.blur();
       
-      // 本地查询彩蛋
-      if (value) {
-        const egg = eggsCache[value];
-        if (egg && egg.elements && egg.elements.length > 0) {
-          triggerEasterEgg(egg.elements);
+      // 检查关键词是否存在，存在则实时查询动画数据
+      if (value && keywordsCache.includes(value)) {
+        try {
+          const res = await fetch(`${EASTER_EGG_API}/check/${encodeURIComponent(value)}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.found && data.egg && data.egg.elements && data.egg.elements.length > 0) {
+              triggerEasterEgg(data.egg.elements);
+            }
+          }
+        } catch (err) {
+          // 查询失败静默处理
         }
       }
     }
@@ -1464,7 +1468,9 @@
 
       } else if (el.type === 'lottie' && el.value) {
         const player = document.createElement('lottie-player');
-        player.setAttribute('src', el.value);
+        // 如果是 R2 路径，补全完整 URL
+        const src = el.value.startsWith('/assets/') ? EASTER_EGG_API + el.value : el.value;
+        player.setAttribute('src', src);
         player.setAttribute('background', 'transparent');
         player.setAttribute('speed', '1');
         player.style.width = size + 'px';
