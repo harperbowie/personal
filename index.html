@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Harper Bowie</title>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/lottie-player/2.0.8/lottie-player.js"></script>
+  <meta name="description" content="Harper Bowie - Curious about what's next. Learning by doing.">
+  <meta property="og:title" content="Harper Bowie">
+  <meta property="og:description" content="Curious about what's next. Learning by doing.">
+  <meta property="og:type" content="website">
   <style>
     * {
       margin: 0;
@@ -12,8 +15,6 @@
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
       -webkit-touch-callout: none;
-      -webkit-user-select: none;
-      user-select: none;
     }
 
     html {
@@ -48,6 +49,8 @@
       background: rgba(0, 0, 0, 0.2);
       cursor: pointer;
       transition: all 0.3s ease;
+      border: none;
+      padding: 0;
     }
 
     .indicator.active {
@@ -57,6 +60,11 @@
 
     .indicator:hover {
       background: rgba(0, 0, 0, 0.4);
+    }
+
+    .card, .contact-btn, .indicator, .secret-btn {
+      -webkit-user-select: none;
+      user-select: none;
     }
 
     /* 全屏容器 */
@@ -295,7 +303,7 @@
         border-radius: 14px;
         font-size: 16px;
         outline: none;
-        width: 280px;
+        width: min(280px, 85vw);
         height: 50px;
         background: transparent;
         color: transparent;
@@ -527,12 +535,12 @@
       border-radius: 14px;
       font-size: 15px;
       outline: none;
-      width: 280px;
+      width: min(280px, 85vw);
       height: 50px;
       line-height: 50px;
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(30px) saturate(180%);
-      box-shadow: 
+      box-shadow:
         inset 0 1px 2px rgba(255, 255, 255, 0.5),
         inset 0 -1px 2px rgba(0, 0, 0, 0.03),
         0 2px 4px rgba(0, 0, 0, 0.08),
@@ -542,8 +550,6 @@
       color: #1d1d1f;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       position: relative;
-      -webkit-user-select: text;
-      user-select: text;
       caret-color: rgba(180, 170, 155, 0.8);
     }
 
@@ -683,11 +689,11 @@
 <body>
 
   <!-- 页面指示器 -->
-  <div class="page-indicators">
-    <div class="indicator active" data-page="0"></div>
-    <div class="indicator" data-page="1"></div>
-    <div class="indicator" data-page="2"></div>
-  </div>
+  <nav class="page-indicators" aria-label="页面导航">
+    <button class="indicator active" data-page="0" aria-label="第1页" aria-current="true"></button>
+    <button class="indicator" data-page="1" aria-label="第2页"></button>
+    <button class="indicator" data-page="2" aria-label="第3页"></button>
+  </nav>
 
   <div class="fullpage-container">
     <div class="sections-wrapper" id="sectionsWrapper">
@@ -701,11 +707,11 @@
             <div class="card-face card-back">
               <div class="card-back-line1">Curious about what's next.</div>
               <div class="card-back-line2">Learning by doing.</div>
-              <div class="card-back-line3">harper.ops.work@gmail.com</div>
+              <div class="card-back-line3" id="emailText"></div>
             </div>
           </div>
         </div>
-        <a href="mailto:harper.ops.work@gmail.com" class="contact-btn" id="contactBtn">Contact Me</a>
+        <a href="#" class="contact-btn" id="contactBtn" data-user="harper.ops.work" data-domain="gmail.com">Contact Me</a>
       </section>
 
       <section class="section about" id="about">
@@ -739,7 +745,7 @@
             <div class="secret-input fake-display" id="fakeInput"><span class="fake-text placeholder" style="color: rgba(0, 0, 0, 0.3);">type something...</span><span class="fake-cursor"></span></div>
           </div>
           <div class="secret-btn-wrapper" id="btnWrapper">
-            <button class="secret-btn" id="secretBtn">➤</button>
+            <button class="secret-btn" id="secretBtn" aria-label="提交">➤</button>
           </div>
         </div>
       </section>
@@ -755,7 +761,16 @@
     if (isIOS) {
       document.documentElement.classList.add('ios');
     }
-    
+
+    // ==================== 邮箱动态拼接 ====================
+    (function() {
+      const btn = document.getElementById('contactBtn');
+      const u = btn.dataset.user, d = btn.dataset.domain;
+      const email = u + '@' + d;
+      btn.href = 'mailto:' + email;
+      document.getElementById('emailText').textContent = email;
+    })();
+
     // ==================== 全屏滚动控制 ====================
     const sectionsWrapper = document.getElementById('sectionsWrapper');
     const sections = document.querySelectorAll('.section');
@@ -779,73 +794,8 @@
     // 第三页时指示器的固定像素位置
     let indicatorFixedTop = null;
 
-    // 跳转到指定页面
-    function goToPage(pageIndex, direction = null) {
-      if (isAnimating || pageIndex === currentPage) return;
-      if (pageIndex < 0 || pageIndex >= totalPages) return;
-      
-      isAnimating = true;
-      
-      const prevPage = currentPage;
-      currentPage = pageIndex;
-      
-      const realIndicators = document.querySelector('.page-indicators');
-      
-      // 即将进入第三页：在动画开始前就无感切换
-      if (currentPage === 2 && !fakeIndicatorsEl) {
-        // 立即隐藏真指示器
-        realIndicators.style.visibility = 'hidden';
-        realIndicators.style.opacity = '0';
-        
-        // 立即创建并显示假指示器
-        fakeIndicatorsEl = realIndicators.cloneNode(true);
-        fakeIndicatorsEl.classList.add('fake-indicators');
-        fakeIndicatorsEl.style.visibility = 'visible';
-        fakeIndicatorsEl.style.opacity = '1';
-        fakeIndicatorsEl.style.transition = 'opacity 0.3s ease';
-        document.body.appendChild(fakeIndicatorsEl);
-        
-        // 同步激活状态到第三个点
-        const fakeIndicatorDots = fakeIndicatorsEl.querySelectorAll('.indicator');
-        fakeIndicatorDots.forEach((dot, index) => {
-          dot.classList.toggle('active', index === 2);
-        });
-      }
-      
-      // 离开第三页：无感切换回真指示器
-      if (prevPage === 2 && currentPage !== 2 && fakeIndicatorsEl) {
-        // 立即删除假指示器
-        fakeIndicatorsEl.remove();
-        fakeIndicatorsEl = null;
-        
-        // 立即显示真指示器
-        realIndicators.style.visibility = 'visible';
-        realIndicators.style.opacity = '1';
-      }
-      
-      // 更新 wrapper 位置
-      sectionsWrapper.style.transform = `translateY(-${currentPage * 100}vh)`;
-      
-      // 更新 section 状态
-      sections.forEach((section, index) => {
-        section.classList.remove('active', 'prev');
-        if (index === currentPage) {
-          section.classList.add('active');
-        } else if (index < currentPage) {
-          section.classList.add('prev');
-        }
-      });
-      
-      // 更新指示器（真指示器，虽然在第三页时隐藏但还是要更新状态）
-      indicators.forEach((indicator, index) => {
-        indicator.classList.toggle('active', index === currentPage);
-      });
-      
-      // 动画完成后解锁
-      setTimeout(() => {
-        isAnimating = false;
-      }, animationDuration);
-    }
+    // 跳转到指定页面（初始声明，后面会被移动端版本覆盖）
+    let goToPage;
 
     // 下一页
     function nextPage() {
@@ -1095,25 +1045,17 @@
       }
     }
     
-    // 实时同步输入内容
+    // 实时同步输入内容 + lift 状态
     secretInput.addEventListener('input', () => {
       syncToFake();
-    });
-    
-    secretInput.addEventListener('input', () => {
-      syncToFake();
-      
-      // 原有的 lift 逻辑
       if (secretInput.value.length > 0) {
         secretInput.classList.add('lift');
         inputWrapper.classList.add('lift');
         secretContainer.classList.add('active');
-        syncLiftState(true);
       } else {
         secretInput.classList.remove('lift');
         inputWrapper.classList.remove('lift');
         secretContainer.classList.remove('active');
-        syncLiftState(false);
       }
     });
 
@@ -1195,20 +1137,6 @@
     const cardContainer = document.getElementById('cardContainer');
     const card = document.getElementById('card');
 
-    // 桌面端输入框 input 事件（用于检测内容变化）
-    if (!isMobile) {
-      secretInput.addEventListener('input', () => {
-        if (secretInput.value.length > 0) {
-          secretInput.classList.add('lift');
-          inputWrapper.classList.add('lift');
-          secretContainer.classList.add('active');
-        } else {
-          secretInput.classList.remove('lift');
-          inputWrapper.classList.remove('lift');
-          secretContainer.classList.remove('active');
-        }
-      });
-    }
 
     // 按钮 hover 效果（仅桌面端）
     if (!isMobile) {
@@ -1355,10 +1283,11 @@
     }
 
     function animateRotation() {
-      currentRotation.x += (targetRotation.x - currentRotation.x) * 0.1;
-      currentRotation.y += (targetRotation.y - currentRotation.y) * 0.1;
-
-      cardContainer.style.transform = `rotateX(${currentRotation.x}deg) rotateY(${currentRotation.y}deg)`;
+      if (currentPage === 0) {
+        currentRotation.x += (targetRotation.x - currentRotation.x) * 0.1;
+        currentRotation.y += (targetRotation.y - currentRotation.y) * 0.1;
+        cardContainer.style.transform = `rotateX(${currentRotation.x}deg) rotateY(${currentRotation.y}deg)`;
+      }
       requestAnimationFrame(animateRotation);
     }
     animateRotation();
@@ -1378,8 +1307,11 @@
         const res = await fetch(`${EASTER_EGG_API}/assets/eggs.json`);
         if (res.ok) {
           const eggs = await res.json();
+          if (!Array.isArray(eggs)) return;
           eggs.forEach(egg => {
-            eggsCache[egg.keyword.toLowerCase()] = egg;
+            if (egg && typeof egg.keyword === 'string') {
+              eggsCache[egg.keyword.toLowerCase()] = egg;
+            }
           });
         }
       } catch (err) {
@@ -1433,15 +1365,18 @@
     }
 
     // 播放单个元素
+    const LUCIDE_WHITELIST = ['heart','star','sun','moon','sparkles','flame','rocket','gift'];
+    let lottieLoaded = false;
+
     function playElement(el, zIndex = 0) {
       const sizeMap = { small: 50, medium: 100, large: 180, xlarge: 280, xxlarge: 400, xxxlarge: 550 };
-      const size = sizeMap[el.size] || sizeMap.medium;
+      const size = Math.min(sizeMap[el.size] || sizeMap.medium, 600);
 
       const container = document.createElement('div');
       container.style.cssText = `
         position: fixed; top: 50%; left: 50%;
         transform: translate(-50%, -50%);
-        z-index: ${1000 + zIndex}; pointer-events: none;
+        z-index: ${1000 + parseInt(zIndex) || 0}; pointer-events: none;
         animation: eggFadeIn 0.3s ease-out;
       `;
 
@@ -1455,6 +1390,7 @@
         }, 2000);
 
       } else if (el.type === 'lucide') {
+        if (!LUCIDE_WHITELIST.includes(el.value)) return;
         container.innerHTML = getLucideSvg(el.value, size);
         document.body.appendChild(container);
         setTimeout(() => {
@@ -1463,23 +1399,34 @@
         }, 2000);
 
       } else if (el.type === 'lottie' && el.value) {
-        const player = document.createElement('lottie-player');
-        // 如果是 R2 路径，补全完整 URL
-        const src = el.value.startsWith('/assets/') ? EASTER_EGG_API + el.value : el.value;
-        player.setAttribute('src', src);
-        player.setAttribute('background', 'transparent');
-        player.setAttribute('speed', '1');
-        player.style.width = size + 'px';
-        player.style.height = size + 'px';
-        container.appendChild(player);
-        document.body.appendChild(container);
-        
-        player.addEventListener('ready', () => player.play());
-        player.addEventListener('complete', () => {
-          container.style.animation = 'eggFadeOut 0.3s ease-out forwards';
-          setTimeout(() => container.remove(), 300);
-        });
-        setTimeout(() => { if (container.parentNode) container.remove(); }, 5000);
+        const loadAndPlay = () => {
+          const player = document.createElement('lottie-player');
+          const src = el.value.startsWith('/assets/') ? EASTER_EGG_API + el.value : el.value;
+          player.setAttribute('src', src);
+          player.setAttribute('background', 'transparent');
+          player.setAttribute('speed', '1');
+          player.style.width = size + 'px';
+          player.style.height = size + 'px';
+          container.appendChild(player);
+          document.body.appendChild(container);
+
+          player.addEventListener('ready', () => player.play());
+          player.addEventListener('complete', () => {
+            container.style.animation = 'eggFadeOut 0.3s ease-out forwards';
+            setTimeout(() => container.remove(), 300);
+          });
+          setTimeout(() => { if (container.parentNode) container.remove(); }, 5000);
+        };
+
+        if (lottieLoaded) {
+          loadAndPlay();
+        } else {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/lottie-player/2.0.8/lottie-player.js';
+          script.onload = () => { lottieLoaded = true; loadAndPlay(); };
+          script.onerror = () => {};
+          document.head.appendChild(script);
+        }
       }
     }
 
@@ -1495,67 +1442,10 @@
         'rocket': '<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09zM12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2zM9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>',
         'gift': '<polyline points="20 12 20 22 4 22 4 12"/><rect width="20" height="5" x="2" y="7"/><line x1="12" x2="12" y1="22" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>'
       };
-      const path = svgs[name] || svgs['heart'];
-      return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="#1d1d1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
-    }
-
-    function triggerOldEasterEgg() {
-      const heart = document.createElement('div');
-      heart.className = 'easter-egg';
-      heart.textContent = '❤️';
-      document.body.appendChild(heart);
-
-      for (let i = 0; i < 50; i++) {
-        setTimeout(() => {
-          createFirework();
-        }, i * 60);
-      }
-
-      setTimeout(() => {
-        heart.remove();
-      }, 3000);
-    }
-
-    function createFirework() {
-      const colors = ['#ff0000', '#ff6b6b', '#ff8787', '#ffa5a5', '#ffc9c9'];
-      const centerX = window.innerWidth / 2;
-      const centerY = window.innerHeight / 2;
-
-      for (let i = 0; i < 30; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'firework';
-        particle.style.left = centerX + 'px';
-        particle.style.top = centerY + 'px';
-        particle.style.background = colors[Math.floor(Math.random() * colors.length)];
-        document.body.appendChild(particle);
-
-        const angle = (Math.PI * 2 * i) / 30;
-        const velocity = 2 + Math.random() * 3;
-        const vx = Math.cos(angle) * velocity;
-        const vy = Math.sin(angle) * velocity;
-
-        let x = centerX;
-        let y = centerY;
-        let opacity = 1;
-
-        function animateParticle() {
-          x += vx;
-          y += vy;
-          opacity -= 0.02;
-
-          particle.style.left = x + 'px';
-          particle.style.top = y + 'px';
-          particle.style.opacity = opacity;
-
-          if (opacity > 0) {
-            requestAnimationFrame(animateParticle);
-          } else {
-            particle.remove();
-          }
-        }
-
-        animateParticle();
-      }
+      const path = svgs[name];
+      if (!path) return '';
+      const s = parseInt(size) || 100;
+      return `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="#1d1d1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
     }
 
     // 初始化第一页状态
